@@ -916,32 +916,69 @@ function extractLabelsAfterPhrase(text, phrases){
  }
  return [];
 }
+
+function getChoiceExplanationText(choice){
+ if(!choice) return "";
+ const parts=[
+  choice.exp,
+  choice.expl,
+  choice.explanation,
+  choice.choiceExp,
+  choice.choiceExplanation,
+  choice["解説"],
+  choice["選択肢解説"],
+  choice["選択肢解説1"],
+  choice["選択肢解説2"],
+  choice["選択肢解説3"]
+ ];
+ return parts
+  .filter(v=>v!==undefined && v!==null && String(v).trim()!=="")
+  .map(v=>String(v).trim())
+  .join("\n");
+}
+function detectTruthFromChoiceExplanation(choice){
+ const raw=getChoiceExplanationText(choice);
+ const compact=raw.replace(/\s+/g,"").trim();
+ if(!compact) return null;
+
+ // 冒頭に「ア 誤っている」「ウ 正しい」等が入る実データ形式に対応
+ const head=compact.slice(0,160);
+
+ if(/誤っている|誤り|誤った記述|正しくない|妥当でない|妥当ではない/.test(head)){
+  return false;
+ }
+ if(/正しい|妥当である|正当である/.test(head)){
+  return true;
+ }
+
+ return null;
+}
+
 function inferChoiceTruth(q, choice){
  const label=normalizeLabelToken(choice && choice.label);
 
- // ① 肢ごとの解説を最優先で判定
- // 例：ウ 正しい / ア 誤り
- const cexp=String(choice?.exp||"").trim();
- const compact=cexp.replace(/\s+/g,"");
-
- if(compact){
-  const head=compact.slice(0,100);
-  if(/誤り|誤っている|誤った記述|妥当でない|正しくない/.test(head)){
-   return false;
-  }
-  if(/正しい|妥当である|正当である/.test(head)){
-   return true;
-  }
-
-  const labelPattern=new RegExp(label+"(?:は|：|:)?(正しい|誤り|誤っている|正しくない|妥当である|妥当でない)");
-  const lm=compact.match(labelPattern);
-  if(lm){
-   return /正しい|妥当である/.test(lm[1]);
-  }
+ // ① 実データの肢解説を最優先で判定
+ // 例：
+ //   ア
+ //   誤っている
+ //   ...
+ //   ウ
+ //   正しい
+ const fromChoiceExp=detectTruthFromChoiceExplanation(choice);
+ if(fromChoiceExp!==null){
+  return fromChoiceExp;
  }
 
  // ② 全体解説から「誤っている記述はアとエ」を判定
- const allText=[q?.exp||"", q?.q||"", q?.title||""].join("\n");
+ const allText=[
+  q?.exp||"",
+  q?.explanation||"",
+  q?.generalExp||"",
+  q?.overallExplanation||"",
+  q?.q||"",
+  q?.title||""
+ ].join("\n");
+
  const falseLabels=extractLabelsAfterPhrase(allText,[
   "誤っている記述は",
   "誤りである記述は",
@@ -976,7 +1013,7 @@ async function judgeChoiceAnswer(ans){
  if(!current||!currentChoice)return;
  const ok=inferChoiceTruth(current,currentChoice); currentChoice.totalCount++; currentChoice.lastAnswered=now();
  if(ans===null){result.textContent="わからない";currentChoice.record="△";currentChoice.wrongCount++;current.wrong=true}else if(ans===ok){result.textContent="正解";currentChoice.correctCount++;stats.correct++}else{result.textContent="不正解";currentChoice.wrongCount++;stats.wrong++;current.wrong=true}
- choiceModeArea.classList.add("hidden"); explanation.innerHTML=`<h3>${esc(current.title||"無題")} 肢${esc(currentChoice.label)}</h3><b>${ok?"この肢は正しい記述です。":"この肢は誤りの記述です。"}</b><br>${esc(currentChoice.text)}${currentChoice.exp?`<h3>肢の解説</h3><div class="small">${esc(currentChoice.exp).replace(/\n/g,"<br>")}</div>`:""}${current.exp?`<h3>全体解説</h3><div class="small">${esc(current.exp).replace(/\n/g,"<br>")}</div>`:""}`; explanation.classList.remove("hidden"); renderChoiceRecordArea(current); scrollToExplanation(); await put(current); await reload();
+ choiceModeArea.classList.add("hidden"); explanation.innerHTML=`<h3>${esc(current.title||"無題")} 肢${esc(currentChoice.label)}</h3><b>${ok?"この肢は正しい記述です。":"この肢は誤りの記述です。"}</b><br>${esc(currentChoice.text)}${getChoiceExplanationText(currentChoice)?`<h3>肢の解説</h3><div class="small">${esc(getChoiceExplanationText(currentChoice)).replace(/\n/g,"<br>")}</div>`:""}${current.exp?`<h3>全体解説</h3><div class="small">${esc(current.exp).replace(/\n/g,"<br>")}</div>`:""}`; explanation.classList.remove("hidden"); renderChoiceRecordArea(current); scrollToExplanation(); await put(current); await reload();
 }
 function showQuestionExplanation(){let h=current.exp?`<h3>全体解説</h3>${esc(current.exp).replace(/\n/g,"<br>")}`:""; h+=`<h3>選択肢ごとの解説</h3>`; current.choices2.forEach(c=>{h+=`<div class="choiceExplain"><b>${esc(c.label)} ${current.answerLabels.includes(c.label)?"（正解）":""}</b><br>${esc(c.text)}${c.exp?`<br><span class="small">${esc(c.exp).replace(/\n/g,"<br>")}</span>`:""}</div>`}); explanation.innerHTML=h; explanation.classList.remove("hidden")}
 function updateRecordButtons(){["markO","markT","markX","markNone"].forEach(id=>document.getElementById(id).classList.remove("selected")); const m={"○":"markO","△":"markT","×":"markX","":"markNone"}[current?.record||""]; if(m)document.getElementById(m).classList.add("selected")}

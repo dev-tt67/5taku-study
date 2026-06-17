@@ -1,0 +1,1311 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>5択問題アプリ 安定版</title>
+<link rel="manifest" href="./manifest.json">
+<meta name="theme-color" content="#222222">
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+<style>
+:root{
+  --bg:#eef6fb;
+  --card:#ffffff;
+  --ink:#1f3349;
+  --muted:#60758b;
+  --primary:#2f80b7;
+  --primary-dark:#23648f;
+  --primary-soft:#dceff9;
+  --accent:#5aa7d8;
+  --success:#2f8f68;
+  --danger:#c45b5b;
+  --warning:#d79b35;
+  --line:#d8e7f0;
+  --shadow:0 8px 24px rgba(37, 92, 130, .12);
+}
+*{box-sizing:border-box}
+body{
+  margin:0;
+  font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  background:
+    radial-gradient(circle at top left, rgba(90,167,216,.22), transparent 32%),
+    linear-gradient(180deg,#f6fbff 0%,var(--bg) 100%);
+  color:var(--ink);
+}
+header{
+  background:linear-gradient(135deg,#2f80b7 0%,#4aa3cf 100%);
+  color:#fff;
+  padding:18px 16px;
+  text-align:center;
+  font-size:20px;
+  font-weight:800;
+  letter-spacing:.04em;
+  box-shadow:0 4px 18px rgba(47,128,183,.22);
+}
+main{max-width:920px;margin:0 auto;padding:18px}
+.card{
+  background:rgba(255,255,255,.94);
+  border:1px solid rgba(216,231,240,.9);
+  border-radius:20px;
+  padding:18px;
+  margin-bottom:18px;
+  box-shadow:var(--shadow);
+  backdrop-filter:blur(4px);
+}
+.tabs{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:10px;
+  margin-bottom:18px;
+  background:rgba(255,255,255,.55);
+  padding:8px;
+  border:1px solid var(--line);
+  border-radius:18px;
+}
+.tabs button{
+  margin:0;
+  background:transparent;
+  color:var(--muted);
+  box-shadow:none;
+}
+.tabs button.active{
+  background:linear-gradient(135deg,var(--primary),var(--accent));
+  color:#fff;
+  box-shadow:0 6px 14px rgba(47,128,183,.22);
+}
+button{
+  width:100%;
+  padding:13px;
+  margin-top:10px;
+  border:none;
+  border-radius:14px;
+  background:linear-gradient(135deg,var(--primary),var(--accent));
+  color:#fff;
+  font-size:16px;
+  font-weight:800;
+  cursor:pointer;
+  box-shadow:0 6px 14px rgba(47,128,183,.18);
+  transition:transform .08s ease, box-shadow .08s ease, filter .08s ease;
+}
+button:hover{filter:brightness(1.03);box-shadow:0 9px 18px rgba(47,128,183,.22)}
+button:active{transform:translateY(1px)}
+button.secondary{
+  background:#e7f2f8;
+  color:var(--primary-dark);
+  box-shadow:none;
+  border:1px solid #cbe2ef;
+}
+button.danger,.danger{
+  background:linear-gradient(135deg,#c45b5b,#d47979)!important;
+  color:#fff!important;
+}
+button.mini,.mini{
+  width:auto;
+  padding:8px 12px;
+  font-size:13px;
+  margin:4px 4px 0 0;
+  background:#eef6fb;
+  color:var(--primary-dark);
+  border:1px solid #cbe2ef;
+  box-shadow:none;
+}
+input,select,textarea{
+  width:100%;
+  box-sizing:border-box;
+  padding:12px 13px;
+  margin:6px 0;
+  border:1px solid #c8dce8;
+  border-radius:14px;
+  font-size:16px;
+  background:#fbfdff;
+  color:var(--ink);
+  outline:none;
+  transition:border-color .1s ease, box-shadow .1s ease, background .1s ease;
+}
+input:focus,select:focus,textarea:focus{
+  border-color:var(--accent);
+  box-shadow:0 0 0 4px rgba(90,167,216,.16);
+  background:#fff;
+}
+textarea{min-height:86px;line-height:1.6}
+label{
+  font-size:13px;
+  font-weight:800;
+  color:#3b5b76;
+  margin-top:10px;
+  display:block;
+}
+h2{
+  font-size:19px;
+  margin:0 0 14px;
+  color:#18324a;
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+h2::before{
+  content:"";
+  width:7px;
+  height:22px;
+  border-radius:999px;
+  background:linear-gradient(180deg,var(--primary),var(--accent));
+  display:inline-block;
+}
+h3{font-size:16px;margin:16px 0 8px;color:#244762}
+.hidden{display:none!important}
+.small{color:var(--muted);font-size:13px;line-height:1.7}
+.filters{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.filters3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+@media(max-width:560px){
+  main{padding:12px}
+  .filters,.filters3{grid-template-columns:1fr}
+  .tabs{grid-template-columns:repeat(2,1fr)}
+}
+.choice{
+  display:block;
+  width:100%;
+  text-align:left;
+  background:#fff;
+  color:var(--ink);
+  border:2px solid #d6e7f1;
+  margin:10px 0;
+  padding:15px;
+  border-radius:16px;
+  font-weight:700;
+  line-height:1.55;
+  box-shadow:0 3px 10px rgba(31,80,114,.06);
+}
+.choice.selected{
+  border-color:var(--primary);
+  background:#e7f4fb;
+  box-shadow:0 0 0 4px rgba(47,128,183,.12);
+}
+.choice.correct{border-color:var(--success);background:#eaf8f2}
+.choice.wrong{border-color:var(--danger);background:#fff0f0}
+.badge{
+  display:inline-block;
+  padding:3px 9px;
+  border-radius:999px;
+  background:#e7f2f8;
+  color:#2c5b7b;
+  font-size:12px;
+  font-weight:700;
+  margin:2px;
+}
+.b-important{background:#fff1d9;color:#9a6414}
+.b-subject{background:#dfeffa;color:#1d638d}
+.explainBox{
+  background:linear-gradient(180deg,#f8fcff,#f1f8fc);
+  border:1px solid var(--line);
+  border-radius:18px;
+  padding:14px;
+  margin-top:12px;
+}
+.choiceExplain{
+  border-top:1px solid var(--line);
+  padding:10px 0;
+}
+.choiceExplain:first-child{border-top:none}
+.result{
+  font-weight:900;
+  font-size:19px;
+  margin-top:14px;
+  color:var(--primary-dark);
+}
+.markBtns{
+  display:flex;
+  gap:8px;
+  margin-top:8px;
+}
+.markBtns button{
+  margin:0;
+  padding:10px;
+  background:#eef6fb;
+  color:var(--primary-dark);
+  border:1px solid #cbe2ef;
+  box-shadow:none;
+}
+.markBtns button.selected{
+  background:linear-gradient(135deg,var(--primary),var(--accent));
+  color:#fff;
+  border-color:transparent;
+  box-shadow:0 5px 12px rgba(47,128,183,.22);
+}
+.list-item{
+  border-bottom:1px solid var(--line);
+  padding:14px 0;
+  font-size:14px;
+  line-height:1.7;
+}
+.list-item:last-child{border-bottom:none}
+#playArea{
+  margin-top:18px;
+  border-top:1px dashed #c7dfe9;
+  padding-top:18px;
+}
+#metaTitle{
+  background:#f0f8fd;
+  border:1px solid var(--line);
+  border-radius:16px;
+  padding:12px;
+}
+#leadText,#choiceTextOnly{
+  background:#fff;
+  border-left:5px solid var(--accent);
+  border-radius:14px;
+  padding:15px;
+  line-height:1.7;
+  box-shadow:0 3px 12px rgba(31,80,114,.07);
+}
+
+select[multiple]{
+  min-height:140px;
+  padding:8px;
+}
+select[multiple] option{padding:7px}
+
+#importantBtn,
+#inlineImportantBtn{
+  transition:background .15s ease, color .15s ease, box-shadow .15s ease, border-color .15s ease;
+}
+#importantBtn.important-on,
+#inlineImportantBtn.important-on{
+  background:linear-gradient(135deg,#f2a93b,#f7c85f)!important;
+  color:#4a3200!important;
+  border-color:#f0b23c!important;
+  box-shadow:0 6px 14px rgba(217,150,35,.28)!important;
+}
+#importantBtn.important-off,
+#inlineImportantBtn.important-off{
+  background:#e7f2f8!important;
+  color:#23648f!important;
+  border:1px solid #cbe2ef!important;
+  box-shadow:none!important;
+}
+
+.importantChoiceBox{
+  display:flex;
+  align-items:flex-start;
+  gap:8px;
+  margin:10px 0;
+}
+.importantChoiceBox input{
+  width:auto;
+  margin-top:18px;
+  transform:scale(1.25);
+  accent-color:#f2a93b;
+}
+.importantChoiceBox .choice{
+  margin:0;
+}
+.importantChoiceNote{
+  color:#9a6414;
+  font-size:12px;
+  font-weight:800;
+  margin-left:4px;
+}
+
+#filterMatchCount,#progressCount{
+  font-weight:800;
+  color:#23648f;
+  background:#f0f8fd;
+}
+
+/* 解説欄の視認性改善 */
+#explanation,
+.explainBox{
+  color:#1f3349 !important;
+  font-size:16px !important;
+  line-height:1.85 !important;
+}
+
+#explanation .small,
+.explainBox .small{
+  color:#2d4054 !important;
+  font-size:15.5px !important;
+  line-height:1.85 !important;
+}
+
+#explanation h3,
+.explainBox h3{
+  color:#18324a !important;
+  font-size:17px !important;
+  font-weight:900 !important;
+  margin-top:18px !important;
+  margin-bottom:10px !important;
+}
+
+.choiceExplain{
+  color:#1f3349 !important;
+  font-size:16px !important;
+  line-height:1.8 !important;
+  padding:13px 0 !important;
+}
+
+.choiceExplain b{
+  color:#18324a !important;
+  font-size:16.5px !important;
+}
+
+#choiceRecordArea{
+  color:#1f3349 !important;
+  font-size:15.5px !important;
+}
+
+
+/* 解説欄をさらに濃く・読みやすく */
+#explanation,
+.explainBox{
+  color:#0f2235 !important;
+}
+
+#explanation .small,
+.explainBox .small{
+  color:#10283f !important;
+}
+
+.choiceExplain,
+.choiceExplain .small{
+  color:#10283f !important;
+}
+
+#explanation b,
+.choiceExplain b{
+  color:#071a2c !important;
+}
+
+</style>
+</head>
+<body>
+<header>5択問題アプリ</header>
+<main>
+<div class="tabs">
+<button id="tabQuiz" class="active" onclick="showTab('quiz')">出題</button>
+<button id="tabImport" onclick="showTab('importSec')">取込/出力</button>
+<button id="tabAdd" onclick="showTab('add')">登録</button>
+<button id="tabList" onclick="showTab('list')">一覧</button>
+</div>
+
+<section id="quiz" class="card">
+<h2>出題</h2>
+<label>出題モード</label>
+<select id="quizMode" onchange="refreshLinkedFilters(\'quiz\')">
+<option value="question">問題単位（4択/5択）</option>
+<option value="choice">肢単位（1肢ごと）</option>
+</select>
+<label>出題対象</label>
+<select id="reviewPattern" onchange="refreshLinkedFilters(\'quiz\')">
+<option value="all">すべて</option>
+<option value="important">重要のみ出題</option>
+<option value="x">×のみ出題</option>
+<option value="tx">△と×のみ出題</option>
+<option value="importantChoice">重要肢のみ出題</option>
+</select>
+<label>全文検索</label><input id="filterKeyword" placeholder="例：公開会社" oninput="refreshLinkedFilters('quiz')" oninput="refreshLinkedFilters('quiz')">
+<div class="filters3">
+<div><label>科目区分</label><select id="filterBucket" onchange="refreshLinkedFilters('quiz')"></select></div>
+<div><label>問題形式</label><select id="filterProblemFormat" onchange="refreshLinkedFilters('quiz')"></select></div>
+<div><label>重要</label><select id="filterImportant" onchange="refreshLinkedFilters('quiz')"></select></div>
+</div>
+<div class="filters3">
+<div><label>年度</label><select id="filterYear" onchange="refreshLinkedFilters('quiz')"></select></div>
+<div><label>試験名</label><select id="filterExam" onchange="refreshLinkedFilters('quiz')"></select></div>
+<div><label>問</label><select id="filterQuestionNo" onchange="refreshLinkedFilters('quiz')"></select></div>
+</div>
+<div class="filters3">
+<div><label>大分類</label><select id="filterLarge" onchange="refreshLinkedFilters('quiz')"></select></div>
+<div><label>中分類</label><select id="filterMiddle" onchange="refreshLinkedFilters('quiz')"></select></div>
+<div><label>小分類</label><select id="filterSmall" onchange="refreshLinkedFilters('quiz')"></select></div>
+</div>
+<div id="filterMatchCount" class="explainBox small">該当問題数：0問</div>
+<button onclick="startQuiz()">出題する</button>
+
+<div id="playArea" class="hidden">
+<div id="progressCount" class="explainBox small">あと0問</div>
+<p class="small" id="metaTitle"></p>
+
+<div id="questionModeArea" class="hidden">
+<h2 id="leadText"></h2>
+<p class="small" id="answerGuide"></p>
+<div id="choices"></div>
+<button onclick="judgeQuestionAnswer()">解答する</button>
+</div>
+
+<div id="choiceModeArea" class="hidden">
+<p class="small">この記述は正しいですか？</p>
+<h2 id="choiceTextOnly"></h2>
+<div class="filters3">
+<button onclick="judgeChoiceAnswer(true)">正しい</button>
+<button onclick="judgeChoiceAnswer(false)">誤り</button>
+<button class="secondary" onclick="judgeChoiceAnswer(null)">わからない</button>
+</div>
+</div>
+
+<div id="result" class="result"></div>
+<div id="explanation" class="explainBox hidden"></div>
+<div id="choiceRecordArea" class="explainBox hidden"></div>
+
+<label>この問題の記録</label>
+<div class="markBtns">
+<button onclick="setQuestionRecord('○')" id="markO">○</button>
+<button onclick="setQuestionRecord('△')" id="markT">△</button>
+<button onclick="setQuestionRecord('×')" id="markX">×</button>
+<button onclick="setQuestionRecord('')" id="markNone">未設定</button>
+</div>
+
+<button class="secondary" id="inlineImportantBtn" onclick="toggleCurrentImportant()">重要にする</button>
+<button class="secondary" onclick="editCurrentQuestion()">この問題を編集する</button>
+<button class="secondary" onclick="previousQuestionInSession()">前の問題</button>
+<button onclick="skipQuestion()">この問題をスキップする</button>
+<button class="secondary" onclick="finishLearning()">学習終了</button>
+<button onclick="nextQuestionInSession()">次を出題</button>
+</div>
+</section>
+
+<section id="importSec" class="card hidden">
+<h2>Excelインポート / CSVエクスポート</h2>
+<label>取り込み先の科目区分</label><select id="importBucket"></select>
+<label>取り込み方法</label>
+<select id="importMode"><option value="append">既存データを上書きせずに追加</option><option value="overwrite">選択した科目区分を上書き</option></select>
+<input type="file" id="excelFile" accept=".xlsx,.xls,.csv">
+<button onclick="importExcel()">Excel/CSVを読み込む</button>
+<label>CSVエクスポート対象の科目区分（複数選択可）</label>
+<select id="exportBuckets" multiple></select>
+<p class="small">未選択の場合は全科目区分を出力します。複数選択は Ctrl キー（Macは Command）を押しながら選択してください。</p>
+<button class="secondary" onclick="exportCSV()">CSVエクスポート</button>
+<button class="danger" onclick="clearAll()">全削除</button>
+<p class="small">対応列：問題形式、本文、問題文、選択肢1〜6、選択肢ラベル1〜6、選択肢1解説1〜3、正解ラベル等。6択・肢なし問題にも対応。</p>
+</section>
+
+<section id="add" class="card hidden">
+<h2>手入力で問題登録・編集</h2>
+
+<label>科目区分</label>
+<select id="addBucket"></select>
+<label>問題形式</label>
+<input id="addProblemFormat" placeholder="例：5択、6択、択一以外">
+
+<div class="filters3">
+  <div><label>出題年度</label><input id="addYear" placeholder="例：H19"></div>
+  <div><label>試験名</label><input id="addExam" placeholder="例：司法試験"></div>
+  <div><label>問</label><input id="addQuestionNo" placeholder="例：問37"></div>
+</div>
+
+<div class="filters">
+  <div><label>科目</label><input id="addSubject" placeholder="例：商法"></div>
+  <div><label>大分類</label><input id="addLarge" placeholder="例：会社"></div>
+</div>
+
+<div class="filters">
+  <div><label>中分類（任意）</label><input id="addMiddle" placeholder="例：定款 ※空欄可"></div>
+  <div><label>小分類</label><input id="addSmall" placeholder="任意"></div>
+</div>
+
+<label>タイトル</label>
+<input id="addTitle" placeholder="例：H19司法試験問37">
+
+<label><input type="checkbox" id="addImportant" style="width:auto"> 重要問題にする</label>
+
+<label>問題文（リード文）</label>
+<textarea id="addLead" placeholder="例：株式会社の定款に関する記述として正しいものを選びなさい。"></textarea>
+
+<h3>選択肢</h3>
+<p class="small">4択の場合は5つ目を空欄にしてください。正解は「ア,ウ」「1,3」のように複数指定できます。</p>
+
+<div class="filters">
+  <div><label>ラベル1</label><input id="addLabel1" value="ア"></div>
+  <div><label>選択肢1</label><input id="addChoice1"></div>
+</div>
+<textarea id="addExp1" placeholder="選択肢1の解説"></textarea>
+
+<div class="filters">
+  <div><label>ラベル2</label><input id="addLabel2" value="イ"></div>
+  <div><label>選択肢2</label><input id="addChoice2"></div>
+</div>
+<textarea id="addExp2" placeholder="選択肢2の解説"></textarea>
+
+<div class="filters">
+  <div><label>ラベル3</label><input id="addLabel3" value="ウ"></div>
+  <div><label>選択肢3</label><input id="addChoice3"></div>
+</div>
+<textarea id="addExp3" placeholder="選択肢3の解説"></textarea>
+
+<div class="filters">
+  <div><label>ラベル4</label><input id="addLabel4" value="エ"></div>
+  <div><label>選択肢4</label><input id="addChoice4"></div>
+</div>
+<textarea id="addExp4" placeholder="選択肢4の解説"></textarea>
+
+<div class="filters">
+  <div><label>ラベル5</label><input id="addLabel5" value="オ"></div>
+  <div><label>選択肢5</label><input id="addChoice5"></div>
+</div>
+<textarea id="addExp5" placeholder="選択肢5の解説"></textarea>
+
+<label>正解ラベル</label>
+<input id="addAnswerLabels" placeholder="例：ア または ア,ウ または 1,3">
+
+<label>全体解説</label>
+<textarea id="addGeneralExp"></textarea>
+
+<label>問題全体の記録</label>
+<select id="addRecord">
+  <option value="">未設定</option>
+  <option>○</option>
+  <option>△</option>
+  <option>×</option>
+</select>
+
+<button onclick="addManualQuestion()">保存</button>
+<button class="secondary" onclick="clearManualForm()">入力欄をクリア</button>
+<button class="secondary hidden" id="cancelEditBtn" onclick="cancelEdit()">編集をキャンセル</button>
+<button class="secondary" onclick="loadSample()">サンプル問題を追加</button>
+</section>
+
+<section id="list" class="card hidden">
+<h2>問題一覧</h2>
+<label>全文検索</label><input id="listKeyword" oninput="refreshLinkedFilters('list')">
+<div class="filters3">
+<div><label>科目区分</label><select id="listBucket" onchange="refreshLinkedFilters('list')"></select></div>
+<div><label>問題形式</label><select id="listProblemFormat" onchange="refreshLinkedFilters('list')"></select></div>
+<div><label>重要</label><select id="listImportant" onchange="refreshLinkedFilters('list')"></select></div>
+</div>
+<div class="filters3">
+<div><label>出題年度</label><select id="listYear" onchange="refreshLinkedFilters('list')"></select></div>
+<div><label>試験名</label><select id="listExam" onchange="refreshLinkedFilters('list')"></select></div>
+<div><label>問</label><select id="listQuestionNo" onchange="refreshLinkedFilters('list')"></select></div>
+</div>
+<div class="filters3">
+<div><label>大分類</label><select id="listLarge" onchange="refreshLinkedFilters('list')"></select></div>
+<div><label>中分類</label><select id="listMiddle" onchange="refreshLinkedFilters('list')"></select></div>
+<div><label>小分類</label><select id="listSmall" onchange="refreshLinkedFilters('list')"></select></div>
+</div>
+<div id="listArea"></div>
+</section>
+</main>
+
+<script>
+const SUBJECT_BUCKETS=["憲法","行政法","民法（総則・物権）","民法（債権・親族・相続）","商法","民事訴訟法","刑法","刑事訴訟法"];
+const DB_NAME="quiz_app_stable_rebuild_v1";
+const STORE="questions";
+let db=null, questions=[], stats={correct:0,wrong:0};
+let current=null, currentChoice=null, selectedLabels=[], editingQuestionId="", returnToPracticeAfterEdit=false;
+let sessionPool=[], sessionIndex=-1, sessionKey="";
+
+if("serviceWorker" in navigator){window.addEventListener("load",()=>navigator.serviceWorker.register("./service-worker.js"));}
+
+function openDB(){
+ return new Promise((resolve,reject)=>{
+  const req=indexedDB.open(DB_NAME,1);
+  req.onupgradeneeded=e=>{
+   const d=e.target.result;
+   if(!d.objectStoreNames.contains(STORE))d.createObjectStore(STORE,{keyPath:"id"});
+   if(!d.objectStoreNames.contains("meta"))d.createObjectStore("meta",{keyPath:"key"});
+  };
+  req.onsuccess=e=>resolve(e.target.result);
+  req.onerror=e=>reject(req.error);
+ });
+}
+function store(mode="readonly"){return db.transaction(STORE,mode).objectStore(STORE)}
+function meta(mode="readonly"){return db.transaction("meta",mode).objectStore("meta")}
+function getAll(){return new Promise((res,rej)=>{const r=store().getAll();r.onsuccess=()=>res(r.result.map(normalize));r.onerror=()=>rej(r.error)})}
+function put(q){return new Promise((res,rej)=>{const r=store("readwrite").put(q);r.onsuccess=()=>res();r.onerror=()=>rej(r.error)})}
+function del(id){return new Promise((res,rej)=>{const r=store("readwrite").delete(id);r.onsuccess=()=>res();r.onerror=()=>rej(r.error)})}
+function clearStore(){return new Promise((res,rej)=>{const r=store("readwrite").clear();r.onsuccess=()=>res();r.onerror=()=>rej(r.error)})}
+function getMeta(k){return new Promise((res,rej)=>{const r=meta().get(k);r.onsuccess=()=>res(r.result?r.result.value:null);r.onerror=()=>rej(r.error)})}
+function setMeta(k,v){return new Promise((res,rej)=>{const r=meta("readwrite").put({key:k,value:v});r.onsuccess=()=>res();r.onerror=()=>rej(r.error)})}
+
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2)}
+function now(){const d=new Date();const p=n=>String(n).padStart(2,"0");return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`}
+function esc(s){return String(s??"").replace(/[&<>'"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#039;",'"':"&quot;"}[c]))}
+function splitLabels(v){return String(v||"").split(/[,\s、，]+/).map(x=>x.trim()).filter(Boolean)}
+function truthy(v){return ["○","〇","1","true","yes","重要","★","⭐"].includes(String(v||"").trim().toLowerCase())}
+function first(row,names){for(const n of names){if(row[n]!==undefined&&row[n]!==null&&String(row[n]).trim()!=="")return row[n]}return ""}
+function exps(row,i){return [row[`選択肢${i}解説1`],row[`選択肢${i}解説2`],row[`選択肢${i}解説3`],row[`選択肢${i}解説`]].filter(v=>v!==undefined&&v!==null&&String(v).trim()!=="").map(String).join("\n")}
+function normalize(q){
+ const choices=(q.choices2||[]).map((c,i)=>({
+  label:String(c.label||String(i+1)), text:String(c.text||""), exp:String(c.exp||""),
+  record:c.record||"", importantChoice:!!c.importantChoice, totalCount:Number(c.totalCount||0), correctCount:Number(c.correctCount||0), wrongCount:Number(c.wrongCount||0), lastAnswered:c.lastAnswered||""
+ })).filter(c=>c.text);
+ return {...q,id:q.id||uid(),subjectBucket:q.subjectBucket||"",problemFormat:q.problemFormat||q.format||"",choices2:choices,answerLabels:(q.answerLabels||[]).map(String),important:!!q.important,record:q.record||"",wrong:!!q.wrong,totalCount:Number(q.totalCount||0),correctCount:Number(q.correctCount||0),wrongCount:Number(q.wrongCount||0)}
+}
+function makeKey(q){return [q.subjectBucket,q.problemFormat,q.year,q.exam,q.questionNo,q.subject,q.unitLarge,q.unitMiddle,q.unitSmall,q.title].map(v=>String(v||"")).join("||")}
+function blob(q){return [q.subjectBucket,q.problemFormat,q.year,q.exam,q.questionNo,q.subject,q.unitLarge,q.unitMiddle,q.unitSmall,q.title,q.q,q.exp,...q.choices2.flatMap(c=>[c.label,c.text,c.exp]),q.answerLabels.join(",")].join(" ").toLowerCase()}
+function matchKw(q,kw){kw=String(kw||"").trim().toLowerCase();if(!kw)return true;return kw.split(/\s+/).every(k=>blob(q).includes(k))}
+function sameSet(a,b){const A=[...new Set(a.map(String))].sort(),B=[...new Set(b.map(String))].sort();return A.length===B.length&&A.every((v,i)=>v===B[i])}
+
+async function reload(){questions=await getAll(); refreshFilters(); renderList(); updateFilterMatchCount()}
+function showTab(id){["quiz","importSec","add","list"].forEach(x=>document.getElementById(x).classList.add("hidden"));["tabQuiz","tabImport","tabAdd","tabList"].forEach(x=>document.getElementById(x).classList.remove("active"));document.getElementById(id).classList.remove("hidden");({quiz:tabQuiz,importSec:tabImport,add:tabAdd,list:tabList}[id]).classList.add("active")}
+function setOpts(sel,vals,all="すべて"){const cur=sel.value;sel.innerHTML=`<option value="">${all}</option>`+vals.filter(Boolean).map(v=>`<option>${esc(v)}</option>`).join("");if(vals.includes(cur))sel.value=cur}
+function uniq(a){return [...new Set(a.filter(Boolean))].sort()}
+
+const FILTER_FIELDS=[
+ {quiz:"filterBucket", list:"listBucket", key:"subjectBucket", label:"科目区分"},
+ {quiz:"filterProblemFormat", list:"listProblemFormat", key:"problemFormat", label:"問題形式"},
+ {quiz:"filterImportant", list:"listImportant", key:"important", label:"重要"},
+ {quiz:"filterYear", list:"listYear", key:"year", label:"年度"},
+ {quiz:"filterExam", list:"listExam", key:"exam", label:"試験名"},
+ {quiz:"filterQuestionNo", list:"listQuestionNo", key:"questionNo", label:"問"},
+ {quiz:"filterLarge", list:"listLarge", key:"unitLarge", label:"大分類"},
+ {quiz:"filterMiddle", list:"listMiddle", key:"unitMiddle", label:"中分類"},
+ {quiz:"filterSmall", list:"listSmall", key:"unitSmall", label:"小分類"}
+];
+
+function filterId(scope, field){
+ return scope==="list" ? field.list : field.quiz;
+}
+function fieldValue(q,key){
+ if(key==="important") return q.important ? "1" : "0";
+ return String(q[key]||"");
+}
+function fieldLabel(key,value){
+ if(key==="important"){
+  if(value==="1") return "重要のみ";
+  if(value==="0") return "重要以外";
+ }
+ return value;
+}
+function currentFilterValues(scope){
+ const result={};
+ FILTER_FIELDS.forEach(f=>{
+  const el=document.getElementById(filterId(scope,f));
+  result[f.key]=el ? el.value : "";
+ });
+ return result;
+}
+function problemMatchesValues(q, values, exceptKey=""){
+ return FILTER_FIELDS.every(f=>{
+  if(f.key===exceptKey) return true;
+  const v=values[f.key]||"";
+  if(!v) return true;
+  return fieldValue(q,f.key)===v;
+ });
+}
+function candidateProblems(scope, exceptKey=""){
+ const values=currentFilterValues(scope);
+ const keywordEl=document.getElementById(scope==="list" ? "listKeyword" : "filterKeyword");
+ const kw=keywordEl ? keywordEl.value : "";
+ return questions.filter(q=>problemMatchesValues(q,values,exceptKey)&&matchKw(q,kw));
+}
+function setFilterOptions(scope, field, currentValue){
+ const id=filterId(scope,field);
+ const el=document.getElementById(id);
+ if(!el) return;
+ const rows=candidateProblems(scope, field.key);
+ let values=[...new Set(rows.map(q=>fieldValue(q,field.key)).filter(v=>v!==""))].sort();
+ if(field.key==="important"){
+  // Always only show values that currently exist in filtered rows.
+  values=values.sort().reverse();
+ }
+ el.innerHTML='<option value="">すべて</option>'+values.map(v=>`<option value="${esc(v)}">${esc(fieldLabel(field.key,v))}</option>`).join("");
+ el.value=(currentValue&&values.includes(currentValue)) ? currentValue : "";
+}
+
+function getCurrentReviewPattern(){
+ const el=document.getElementById("reviewPattern");
+ return el ? el.value : "all";
+}
+function quizMatchedCount(){
+ if(document.getElementById("quizMode") && quizMode.value==="choice" && typeof choiceCards==="function"){
+  return choiceCards(getCurrentReviewPattern()).length;
+ }
+ if(typeof filteredQuestions==="function"){
+  return filteredQuestions(getCurrentReviewPattern()).length;
+ }
+ return 0;
+}
+function updateFilterMatchCount(){
+ const el=document.getElementById("filterMatchCount");
+ if(!el) return;
+ const isChoice=document.getElementById("quizMode") && quizMode.value==="choice";
+ const unit=isChoice ? "肢" : "問";
+ el.textContent=`該当${unit}数：${quizMatchedCount()}${unit}`;
+}
+function updateProgressCount(){
+ const el=document.getElementById("progressCount");
+ if(!el) return;
+ const total=(sessionPool && sessionPool.length) ? sessionPool.length : 0;
+ const currentNo=Math.max(0,sessionIndex+1);
+ const remaining=Math.max(0,total-currentNo);
+ const unit=(document.getElementById("quizMode") && quizMode.value==="choice") ? "肢" : "問";
+ el.textContent=`あと${remaining}${unit}（${currentNo}/${total}${unit}）`;
+}
+
+function refreshLinkedFilters(scope){
+ const values=currentFilterValues(scope);
+ FILTER_FIELDS.forEach(f=>setFilterOptions(scope,f,values[f.key]||""));
+ if(scope==="list") renderList();
+ if(scope==="quiz") updateFilterMatchCount();
+}
+function selectedProblemsForScope(scope){
+ const values=currentFilterValues(scope);
+ const keywordEl=document.getElementById(scope==="list" ? "listKeyword" : "filterKeyword");
+ const kw=keywordEl ? keywordEl.value : "";
+ return questions.filter(q=>problemMatchesValues(q,values)&&matchKw(q,kw));
+}
+
+function refreshFilters(){
+ if(document.getElementById("exportBuckets")){
+  exportBuckets.innerHTML=SUBJECT_BUCKETS.map(v=>`<option>${esc(v)}</option>`).join("");
+ }
+ if(document.getElementById("importBucket")){
+  importBucket.innerHTML=SUBJECT_BUCKETS.map(v=>`<option>${esc(v)}</option>`).join("");
+ }
+ if(document.getElementById("addBucket")){
+  addBucket.innerHTML=SUBJECT_BUCKETS.map(v=>`<option>${esc(v)}</option>`).join("");
+ }
+ refreshLinkedFilters("quiz");
+ refreshLinkedFilters("list");
+ updateFilterMatchCount();
+}
+function patternQuestion(q,pat){if(pat==="all")return true;if(pat==="important")return q.important;if(pat==="x")return q.record==="×"||q.wrong;if(pat==="tx")return q.record==="△"||q.record==="×"||q.wrong;if(pat==="importantChoice")return (q.choices2||[]).some(c=>c.importantChoice);return true}
+function patternChoice(c,q,pat){if(pat==="all")return true;if(pat==="important")return q.important;if(pat==="x")return c.record==="×"||c.wrongCount>0;if(pat==="tx")return c.record==="△"||c.record==="×"||c.wrongCount>0;if(pat==="importantChoice")return !!c.importantChoice;return true}
+function filteredQuestions(pat="all"){
+ return selectedProblemsForScope("quiz").filter(q=>patternQuestion(q,pat));
+}
+function choiceCards(pat="all"){
+ const arr=[]; filteredQuestions("all").forEach(q=>q.choices2.forEach(c=>{if(c.text&&patternChoice(c,q,pat))arr.push({qid:q.id,label:c.label})})); return arr
+}
+function shuffle(a){a=[...a];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+
+
+
+function scrollToExplanation(){
+ const target=document.getElementById("explanation");
+ if(!target || target.classList.contains("hidden")) return;
+ setTimeout(()=>{
+  const y=target.getBoundingClientRect().top + window.pageYOffset - 90;
+  window.scrollTo({top:Math.max(0,y),behavior:"smooth"});
+ },80);
+}
+
+function scrollToCurrentQuestion(){
+ const target=document.getElementById("metaTitle") || document.getElementById("playArea");
+ if(!target) return;
+ setTimeout(()=>{
+  const y=target.getBoundingClientRect().top + window.pageYOffset - 90;
+  window.scrollTo({top:Math.max(0,y),behavior:"smooth"});
+ },80);
+}
+
+async function startQuiz(){
+ const mode=quizMode.value, pat=reviewPattern.value, bucket=filterBucket.value||"ALL"; sessionKey=`session:${bucket}:${mode}:${pat}`;
+ const saved=await getMeta(sessionKey);
+ if(saved&&saved.pool&&saved.index>=0&&saved.index<saved.pool.length-1&&confirm("前回の続きがあります。続きから始めますか？")){
+  sessionPool=saved.pool; sessionIndex=saved.index; return nextQuestionInSession();
+ }
+ updateFilterMatchCount();
+ sessionPool= mode==="choice" ? shuffle(choiceCards(pat)) : shuffle(filteredQuestions(pat).map(q=>q.id));
+ sessionIndex=-1; await setMeta(sessionKey,{pool:sessionPool,index:sessionIndex,updatedAt:now()}); nextQuestionInSession();
+}
+async function nextQuestionInSession(){
+ if(!sessionPool.length){alert("条件に合う問題がありません。");return}
+ sessionIndex++;
+ if(sessionIndex>=sessionPool.length){alert("この条件の問題は終了しました。");return finishLearning(false)}
+ await setMeta(sessionKey,{pool:sessionPool,index:sessionIndex,updatedAt:now()});
+ updateProgressCount();
+ if(quizMode.value==="choice"){const card=sessionPool[sessionIndex]; return showChoiceCard(card.qid,card.label)}
+ return showQuestion(sessionPool[sessionIndex])
+}
+
+async function previousQuestionInSession(){
+ if(!sessionPool || !sessionPool.length){
+  alert("前の問題がありません。");
+  return;
+ }
+ if(sessionIndex<=0){
+  alert("これより前の問題はありません。");
+  updateProgressCount();
+  return;
+ }
+ sessionIndex--;
+ await setMeta(sessionKey,{pool:sessionPool,index:sessionIndex,updatedAt:now()});
+ updateProgressCount();
+ if(quizMode.value==="choice"){
+  const card=sessionPool[sessionIndex];
+  showChoiceCard(card.qid,card.label);
+ }else{
+  showQuestion(sessionPool[sessionIndex]);
+ }
+ scrollToCurrentQuestion();
+}
+
+function skipQuestion(){nextQuestionInSession()}
+async function finishLearning(show=true){if(sessionKey)await setMeta(sessionKey,{pool:sessionPool,index:sessionIndex,updatedAt:now()}); playArea.classList.add("hidden"); if(document.getElementById("progressCount")) progressCount.textContent="あと0問"; current=null; currentChoice=null; if(show)alert("進捗を保存しました。")}
+function resetPlay(){selectedLabels=[];result.textContent="";explanation.classList.add("hidden");explanation.innerHTML="";choiceRecordArea.classList.add("hidden");choices.innerHTML="";questionModeArea.classList.add("hidden");choiceModeArea.classList.add("hidden")}
+function badge(q){return `${q.subjectBucket?`<span class="badge b-subject">区分：${esc(q.subjectBucket)}</span>`:""}${q.problemFormat?`<span class="badge">形式：${esc(q.problemFormat)}</span>`:""}${q.important?`<span class="badge b-important">★重要</span>`:""}<span class="badge">${esc(q.year||"年度なし")}</span><span class="badge">${esc(q.exam||"試験名なし")}</span><span class="badge">${esc(q.questionNo||"問なし")}</span>`}
+function showQuestion(qid){
+ updateProgressCount();
+ const q=questions.find(x=>x.id===qid); if(!q)return nextQuestionInSession(); current=q; currentChoice=null; resetPlay(); playArea.classList.remove("hidden"); questionModeArea.classList.remove("hidden");
+ metaTitle.innerHTML=`<b>${esc(q.title||"無題")}</b><br>${badge(q)}`; leadText.textContent=q.q||""; answerGuide.textContent=q.answerLabels.length>1?"正しいものをすべて選択してください。":"正しいものを1つ選択してください。";
+ q.choices2.forEach((c,i)=>{
+  const wrap=document.createElement("div");
+  wrap.className="importantChoiceBox";
+
+  const chk=document.createElement("input");
+  chk.type="checkbox";
+  chk.title="重要肢";
+  chk.checked=!!c.importantChoice;
+  chk.onchange=async(e)=>{
+    e.stopPropagation();
+    c.importantChoice=chk.checked;
+    await put(q);
+    await reload();
+  };
+
+  const btn=document.createElement("button");
+  btn.className="choice";
+  btn.innerHTML=`${esc(c.label)}　${esc(c.text)}${c.importantChoice?'<span class="importantChoiceNote"> ★重要肢</span>':""}`;
+  btn.onclick=()=>{
+    if(btn.disabled)return;
+    if(selectedLabels.includes(c.label)){
+      selectedLabels=selectedLabels.filter(x=>x!==c.label);
+      btn.classList.remove("selected");
+    }else{
+      selectedLabels.push(c.label);
+      btn.classList.add("selected");
+    }
+  };
+
+  wrap.appendChild(chk);
+  wrap.appendChild(btn);
+  choices.appendChild(wrap);
+ });
+ updateRecordButtons();
+ if(typeof updateInlineImportantButton==="function") updateInlineImportantButton();
+ if(typeof scrollToCurrentQuestion==="function") scrollToCurrentQuestion();
+}
+function showChoiceCard(qid,label){
+ updateProgressCount();
+ const q=questions.find(x=>x.id===qid); if(!q)return nextQuestionInSession(); const c=q.choices2.find(x=>String(x.label)===String(label)); if(!c)return nextQuestionInSession();
+ current=q; currentChoice=c; resetPlay(); playArea.classList.remove("hidden"); choiceModeArea.classList.remove("hidden");
+ metaTitle.innerHTML=`<b>${esc(q.title||"無題")} 肢${esc(c.label)}</b><br>${badge(q)}<br><span class="small">元問題：${esc(q.q||"").slice(0,120)}</span>`; choiceTextOnly.textContent=c.text; updateRecordButtons(); if(typeof updateInlineImportantButton==='function') updateInlineImportantButton(); scrollToCurrentQuestion(); updateInlineImportantButton();
+}
+async function judgeQuestionAnswer(){
+ if(!current||!selectedLabels.length){alert("選択肢を選んでください。");return}
+ [...document.querySelectorAll("#choices .choice")].forEach((b,i)=>{b.disabled=true;const l=current.choices2[i].label;if(current.answerLabels.includes(l))b.classList.add("correct");else if(selectedLabels.includes(l))b.classList.add("wrong")});
+ current.totalCount++; current.lastAnswered=now();
+ if(sameSet(selectedLabels,current.answerLabels)){result.textContent="正解";current.correctCount++;stats.correct++;current.wrong=false}else{result.textContent="不正解";current.wrongCount++;stats.wrong++;current.wrong=true}
+ showQuestionExplanation(); renderChoiceRecordArea(current); scrollToExplanation(); await put(current); await reload();
+}
+async function judgeChoiceAnswer(ans){
+ if(!current||!currentChoice)return;
+ const ok=current.answerLabels.includes(String(currentChoice.label)); currentChoice.totalCount++; currentChoice.lastAnswered=now();
+ if(ans===null){result.textContent="わからない";currentChoice.record="△";currentChoice.wrongCount++;current.wrong=true}else if(ans===ok){result.textContent="正解";currentChoice.correctCount++;stats.correct++}else{result.textContent="不正解";currentChoice.wrongCount++;stats.wrong++;current.wrong=true}
+ choiceModeArea.classList.add("hidden"); explanation.innerHTML=`<h3>${esc(current.title||"無題")} 肢${esc(currentChoice.label)}</h3><b>${ok?"正しい記述です。":"誤りの記述です。"}</b><br>${esc(currentChoice.text)}${currentChoice.exp?`<h3>肢の解説</h3><div class="small">${esc(currentChoice.exp).replace(/\n/g,"<br>")}</div>`:""}${current.exp?`<h3>全体解説</h3><div class="small">${esc(current.exp).replace(/\n/g,"<br>")}</div>`:""}`; explanation.classList.remove("hidden"); renderChoiceRecordArea(current); scrollToExplanation(); await put(current); await reload();
+}
+function showQuestionExplanation(){let h=current.exp?`<h3>全体解説</h3>${esc(current.exp).replace(/\n/g,"<br>")}`:""; h+=`<h3>選択肢ごとの解説</h3>`; current.choices2.forEach(c=>{h+=`<div class="choiceExplain"><b>${esc(c.label)} ${current.answerLabels.includes(c.label)?"（正解）":""}</b><br>${esc(c.text)}${c.exp?`<br><span class="small">${esc(c.exp).replace(/\n/g,"<br>")}</span>`:""}</div>`}); explanation.innerHTML=h; explanation.classList.remove("hidden")}
+function updateRecordButtons(){["markO","markT","markX","markNone"].forEach(id=>document.getElementById(id).classList.remove("selected")); const m={"○":"markO","△":"markT","×":"markX","":"markNone"}[current?.record||""]; if(m)document.getElementById(m).classList.add("selected")}
+async function setQuestionRecord(v){if(!current)return;current.record=v;if(v==="×")current.wrong=true;updateRecordButtons();await put(current);await reload()}
+function renderChoiceRecordArea(q){let h=`<h3>肢ごとの記録</h3>`;q.choices2.forEach((c,i)=>{h+=`<div class="choiceExplain"><b>${esc(c.label)}</b> ${esc(c.text.slice(0,80))}<br><button class="mini ${c.record==="○"?"secondary":""}" onclick="setChoiceRecord(${i},'○')">○</button><button class="mini ${c.record==="△"?"secondary":""}" onclick="setChoiceRecord(${i},'△')">△</button><button class="mini ${c.record==="×"?"secondary":""}" onclick="setChoiceRecord(${i},'×')">×</button><button class="mini" onclick="setChoiceRecord(${i},'')">解除</button><button class="mini ${c.importantChoice?"secondary":""}" onclick="toggleChoiceImportant(${i})">${c.importantChoice?"重要肢を外す":"重要肢にする"}</button> 現在：${c.record||"未設定"}${c.importantChoice?"　★重要肢":""}</div>`}); choiceRecordArea.innerHTML=h; choiceRecordArea.classList.remove("hidden")}
+async function setChoiceRecord(i,v){if(!current||!current.choices2[i])return;current.choices2[i].record=v;if(v==="×")current.wrong=true;renderChoiceRecordArea(current);await put(current);await reload()}
+
+
+function collectManualChoices(){
+ const arr=[];
+ for(let i=1;i<=5;i++){
+  const label=document.getElementById(`addLabel${i}`).value.trim() || String(i);
+  const text=document.getElementById(`addChoice${i}`).value.trim();
+  const exp=document.getElementById(`addExp${i}`).value.trim();
+  if(text){
+   arr.push({
+    label,
+    text,
+    exp,
+    record:"",
+    totalCount:0,
+    correctCount:0,
+    wrongCount:0,
+    lastAnswered:""
+   });
+  }
+ }
+ return arr;
+}
+
+async function addManualQuestion(){
+ const choices=collectManualChoices();
+ const answerLabels=splitLabels(addAnswerLabels.value);
+ const existing=editingQuestionId ? questions.find(x=>x.id===editingQuestionId) : null;
+ const q={
+  id:editingQuestionId || uid(),
+  subjectBucket:addBucket.value,
+  problemFormat:addProblemFormat.value.trim(),
+  year:addYear.value.trim(),
+  exam:addExam.value.trim(),
+  questionNo:addQuestionNo.value.trim(),
+  subject:addSubject.value.trim(),
+  unitLarge:addLarge.value.trim(),
+  unitMiddle:addMiddle.value.trim(),
+  unitSmall:addSmall.value.trim(),
+  important:addImportant.checked,
+  title:addTitle.value.trim(),
+  q:addLead.value.trim(),
+  choices2:choices.map((c,i)=>({
+    ...c,
+    record: existing?.choices2?.[i]?.record || c.record || "",
+    totalCount: existing?.choices2?.[i]?.totalCount || c.totalCount || 0,
+    correctCount: existing?.choices2?.[i]?.correctCount || c.correctCount || 0,
+    wrongCount: existing?.choices2?.[i]?.wrongCount || c.wrongCount || 0,
+    lastAnswered: existing?.choices2?.[i]?.lastAnswered || c.lastAnswered || ""
+  })),
+  answerLabels,
+  exp:addGeneralExp.value.trim(),
+  record:addRecord.value,
+  wrong:addRecord.value==="×" || existing?.wrong || false,
+  totalCount: existing?.totalCount || 0,
+  correctCount: existing?.correctCount || 0,
+  wrongCount: existing?.wrongCount || 0,
+  lastAnswered: existing?.lastAnswered || ""
+ };
+
+ if(!q.q){
+  alert("問題文（リード文）を入力してください。");
+  return;
+ }
+ if(q.choices2.length<4){
+  alert("選択肢は4つ以上入力してください。");
+  return;
+ }
+ if(!q.answerLabels.length){
+  alert("正解ラベルを入力してください。");
+  return;
+ }
+ const labels=q.choices2.map(c=>c.label);
+ const dup=labels.filter((v,i,a)=>a.indexOf(v)!==i);
+ if(dup.length){
+  alert("選択肢ラベルが重複しています："+[...new Set(dup)].join(","));
+  return;
+ }
+ const missing=q.answerLabels.filter(a=>!labels.includes(a));
+ if(missing.length){
+  alert("正解ラベルが選択肢ラベルに存在しません："+missing.join(","));
+  return;
+ }
+
+ const key=makeKey(q);
+ if(!editingQuestionId && questions.some(x=>makeKey(x)===key)){
+  if(!confirm("同じ分類・タイトルの問題が既にあります。追加しますか？")) return;
+ }
+
+ await put(q);
+ await reload();
+ alert(editingQuestionId ? "問題を更新しました。" : "問題を保存しました。");
+ const shouldReturn=returnToPracticeAfterEdit;
+ const editedId=q.id;
+ clearManualForm();
+ if(shouldReturn){
+  returnToPracticeAfterEdit=false;
+  await reload();
+  const updated=questions.find(x=>x.id===editedId);
+  if(updated){
+   current=updated;
+   showTab("quiz");
+   if(currentChoice){
+    const updatedChoice=(updated.choices2||[]).find(c=>String(c.label)===String(currentChoice.label));
+    if(updatedChoice){
+     currentChoice=updatedChoice;
+     showChoiceCard(updated.id, updatedChoice.label);
+    }else{
+     showQuestion(updated.id);
+    }
+   }else{
+    showQuestion(updated.id);
+   }
+  }else{
+   showTab("quiz");
+  }
+ }else{
+  showTab("list");
+ }
+}
+
+function clearManualForm(){
+ editingQuestionId="";
+ ["addProblemFormat","addYear","addExam","addQuestionNo","addSubject","addLarge","addMiddle","addSmall","addTitle","addLead","addAnswerLabels","addGeneralExp"].forEach(id=>{
+  const el=document.getElementById(id);
+  if(el) el.value="";
+ });
+ for(let i=1;i<=5;i++){
+  document.getElementById(`addChoice${i}`).value="";
+  document.getElementById(`addExp${i}`).value="";
+ }
+ ["addLabel1","addLabel2","addLabel3","addLabel4","addLabel5"].forEach((id,i)=>{
+  document.getElementById(id).value=["ア","イ","ウ","エ","オ"][i];
+ });
+ addImportant.checked=false;
+ addRecord.value="";
+ const saveBtn=document.querySelector('#add button[onclick="addManualQuestion()"]');
+ if(saveBtn) saveBtn.textContent="保存";
+ if(document.getElementById("cancelEditBtn")) cancelEditBtn.classList.add("hidden");
+}
+
+function cancelEdit(){
+ const shouldReturn=returnToPracticeAfterEdit;
+ clearManualForm();
+ returnToPracticeAfterEdit=false;
+ showTab(shouldReturn?"quiz":"list");
+}
+
+
+
+function updateInlineImportantButton(){
+ const btn=document.getElementById("inlineImportantBtn");
+ if(!btn || !current) return;
+ btn.textContent=current.important ? "重要を外す" : "重要にする";
+ btn.classList.toggle("important-on", !!current.important);
+ btn.classList.toggle("important-off", !current.important);
+}
+
+async function toggleCurrentImportant(){
+ if(!current){
+  alert("出題中の問題がありません。");
+  return;
+ }
+ current.important=!current.important;
+ await put(current);
+ await reload();
+ const updated=questions.find(q=>q.id===current.id);
+ if(updated) current=updated;
+ updateInlineImportantButton();
+ if(typeof metaTitle!=="undefined" && current){
+  // 出題中の表示にも即時反映
+  if(currentChoice){
+   metaTitle.innerHTML=`<b>${esc(current.title||"無題")} 肢${esc(currentChoice.label)}</b><br>${badge(current)}<br><span class="small">元問題：${esc(current.q||"").slice(0,120)}</span>`;
+  }else{
+   metaTitle.innerHTML=`<b>${esc(current.title||"無題")}</b><br>${badge(current)}`;
+  }
+ }
+}
+
+function editCurrentQuestion(){
+ if(!current){
+  alert("編集中の問題がありません。");
+  return;
+ }
+ returnToPracticeAfterEdit=true;
+ editQuestion(current.id);
+}
+
+function editQuestion(id){
+ const q=questions.find(x=>x.id===id);
+ if(!q){
+  alert("編集対象の問題が見つかりません。");
+  return;
+ }
+ editingQuestionId=id;
+ showTab("add");
+ addBucket.value=q.subjectBucket||"";
+ addProblemFormat.value=q.problemFormat||"";
+ addYear.value=q.year||"";
+ addExam.value=q.exam||"";
+ addQuestionNo.value=q.questionNo||"";
+ addSubject.value=q.subject||"";
+ addLarge.value=q.unitLarge||"";
+ addMiddle.value=q.unitMiddle||"";
+ addSmall.value=q.unitSmall||"";
+ addTitle.value=q.title||"";
+ addImportant.checked=!!q.important;
+ addLead.value=q.q||"";
+ addAnswerLabels.value=(q.answerLabels||[]).join(",");
+ addGeneralExp.value=q.exp||"";
+ addRecord.value=q.record||"";
+
+ for(let i=1;i<=5;i++){
+  const c=(q.choices2||[])[i-1]||{};
+  document.getElementById(`addLabel${i}`).value=c.label||["ア","イ","ウ","エ","オ"][i-1];
+  document.getElementById(`addChoice${i}`).value=c.text||"";
+  document.getElementById(`addExp${i}`).value=c.exp||"";
+ }
+ const saveBtn=document.querySelector('#add button[onclick="addManualQuestion()"]');
+ if(saveBtn) saveBtn.textContent="更新";
+ if(document.getElementById("cancelEditBtn")) cancelEditBtn.classList.remove("hidden");
+ window.scrollTo({top:0,behavior:"smooth"});
+}
+async function toggleChoiceImportant(i){
+ if(!current||!current.choices2[i])return;
+ current.choices2[i].importantChoice=!current.choices2[i].importantChoice;
+ renderChoiceRecordArea(current);
+ await put(current);
+ await reload();
+}
+
+
+async function importExcel(){
+ if(typeof XLSX==="undefined"){alert("Excel読込ライブラリを読み込めません。ネット接続後に再度お試しください。");return}
+ const file=excelFile.files[0];
+ if(!file){alert("ファイルを選択してください。");return}
+ const bucket=importBucket.value;
+ if(importMode.value==="overwrite"){
+  const targets=questions.filter(q=>q.subjectBucket===bucket);
+  if(targets.length&&!confirm(bucket+"の既存データを削除します。よろしいですか？"))return;
+  for(const q of targets)await del(q.id);
+  await reload();
+ }
+ const reader=new FileReader();
+ reader.onload=async e=>{
+  const wb=XLSX.read(new Uint8Array(e.target.result),{type:"array"});
+
+  // Sheet1を優先。ただし、本文と選択肢列があるシートを見つけた場合はそのシートを採用。
+  let sheetName=wb.SheetNames.includes("Sheet1")?"Sheet1":wb.SheetNames[0];
+  for(const sn of wb.SheetNames){
+   const preview=XLSX.utils.sheet_to_json(wb.Sheets[sn],{defval:"",header:1,range:0});
+   const header=(preview[0]||[]).map(String);
+   if((header.includes("本文")||header.includes("問題文")) && (header.includes("選択肢1")||header.includes("問題形式")||header.includes("問題形式モンダイケイシキ"))){
+    sheetName=sn;
+    break;
+   }
+  }
+
+  const rows=XLSX.utils.sheet_to_json(wb.Sheets[sheetName],{defval:""});
+  const keys=new Set(questions.map(makeKey));
+  let count=0,skip=0,invalid=0;
+
+  for(const row of rows){
+   const ch=[];
+   // 新形式：選択肢1〜6まで対応。空欄の選択肢は無視。
+   for(let i=1;i<=6;i++){
+    const text=String(first(row,[`選択肢${i}`,`肢${i}`,`選択肢${i}本文`,`${i}`])).trim();
+    const label=String(first(row,[`選択肢ラベル${i}`,`選択肢ラベル${i}センタクシ`,`選択肢${i}ラベル`,`${i}ラベル`])).trim();
+    if(text){
+     ch.push({
+      label:label||String(i),
+      text,
+      exp:exps(row,i),
+      record:"",
+      totalCount:0,
+      correctCount:0,
+      wrongCount:0,
+      lastAnswered:""
+     });
+    }
+   }
+
+   const problemFormat=String(first(row,["問題形式","問題形式モンダイケイシキ","形式"])).trim();
+   const q={
+    id:uid(),
+    subjectBucket:first(row,["科目区分"])||bucket,
+    year:first(row,["出題年度","年度"]),
+    exam:first(row,["試験名"]),
+    questionNo:String(first(row,["問","問題番号"])),
+    subject:first(row,["科目"]),
+    unitLarge:first(row,["大分類"]),
+    unitMiddle:first(row,["中分類"]),
+    unitSmall:first(row,["小分類"]),
+    important:truthy(first(row,["重要"])),
+    problemFormat,
+    title:first(row,["タイトル"]),
+    q:first(row,["本文","問題文","リード文"]),
+    choices2:ch,
+    answerLabels:splitLabels(first(row,["正解ラベル","正解ラベルセイカイ","正解"])),
+    exp:first(row,["全体解説","解説"]),
+    record:"",
+    wrong:false,
+    totalCount:0,
+    correctCount:0,
+    wrongCount:0,
+    lastAnswered:""
+   };
+
+   // 6択や択一でない問題も取り込むため、必須条件は「本文またはタイトルがあること」のみに緩和。
+   // 選択肢が0件でも取り込み可。選択肢がある場合も、正解ラベルが選択肢ラベルと一致しない形式を許容。
+   if(!(q.q||q.title)){
+    invalid++;
+    continue;
+   }
+
+   const k=makeKey(q);
+   if(keys.has(k)){
+    skip++;
+    continue;
+   }
+   await put(q);
+   keys.add(k);
+   count++;
+  }
+  await reload();
+  alert(`${bucket}に${count}問読み込みました。スキップ${skip}問、不備${invalid}問。`);
+ };
+ reader.readAsArrayBuffer(file);
+}
+async function clearAll(){if(confirm("全データを削除しますか？")){await clearStore();await reload();playArea.classList.add("hidden")}}
+async function loadSample(){const q={id:uid(),subjectBucket:"商法",problemFormat:"5択",year:"H19",exam:"司法試験",questionNo:"問37",subject:"商法",unitLarge:"会社",unitMiddle:"定款",unitSmall:"",important:true,title:"H19司法試験問37",q:"株式会社の定款に関する記述として正しいものを選びなさい。",choices2:[{label:"ア",text:"株式会社が新規の事業を行うためには、その都度定款変更が必要となって煩雑である。",exp:"サンプル解説",record:"",importantChoice:false,totalCount:0,correctCount:0,wrongCount:0,lastAnswered:""},{label:"イ",text:"選択肢イのサンプル本文です。",exp:"",record:"",importantChoice:false,totalCount:0,correctCount:0,wrongCount:0,lastAnswered:""},{label:"ウ",text:"選択肢ウのサンプル本文です。",exp:"",record:"",importantChoice:false,totalCount:0,correctCount:0,wrongCount:0,lastAnswered:""},{label:"エ",text:"選択肢エのサンプル本文です。",exp:"",record:"",importantChoice:false,totalCount:0,correctCount:0,wrongCount:0,lastAnswered:""}],answerLabels:["イ"],exp:"",record:"",wrong:false,totalCount:0,correctCount:0,wrongCount:0,lastAnswered:""};await put(q);await reload();alert("サンプルを追加しました")}
+function getElValue(id){
+ const el=document.getElementById(id);
+ return el ? el.value : "";
+}
+
+function renderList(){
+ const rows=selectedProblemsForScope("list");
+ if(!rows.length){
+  listArea.innerHTML="<p class='small'>該当する問題はありません。</p>";
+  return;
+ }
+ listArea.innerHTML="";
+ rows.forEach(q=>{
+  const d=document.createElement("div");
+  d.className="list-item";
+  d.innerHTML=`<b>${esc(q.title||"無題")}</b> ${q.important?'<span class="badge b-important">★重要</span>':""}<br>${badge(q)}<br>${esc(q.q||"").slice(0,120)}<br>正解：${esc((q.answerLabels||[]).join(","))}　選択肢数：${(q.choices2||[]).length}<br><button class="mini" onclick="editQuestion('${q.id}')">編集</button>${typeof deleteQuestionFromList==="function"?`<button class="mini danger" onclick="deleteQuestionFromList('${q.id}')">削除</button>`:""}`;
+  listArea.appendChild(d);
+ });
+}
+async function deleteQuestionFromList(id){
+ if(!confirm("この問題を削除しますか？")) return;
+ await del(id);
+ await reload();
+}
+
+function selectedExportBuckets(){
+ const sel=document.getElementById("exportBuckets");
+ if(!sel)return [];
+ return Array.from(sel.selectedOptions).map(o=>o.value).filter(Boolean);
+}
+function exportCSV(){
+ const buckets=selectedExportBuckets();
+ const target=questions.filter(q=>!buckets.length || buckets.includes(q.subjectBucket));
+ const maxChoices=Math.max(6,...target.map(q=>(q.choices2||[]).length));
+ const header=["科目区分","問題形式","出題年度","試験名","問","科目","大分類","中分類","小分類","重要","タイトル","本文","正解ラベル","全体解説","問題記録","問題総解答回数","問題正答回数","問題誤答回数","問題最終解答日","復習対象"];
+ for(let i=1;i<=maxChoices;i++){
+  header.push(`選択肢ラベル${i}`,`選択肢${i}`,`選択肢${i}解説`,`選択肢${i}記録`,`選択肢${i}総解答回数`,`選択肢${i}正答回数`,`選択肢${i}誤答回数`,`選択肢${i}最終解答日`);
+ }
+ const rows=target.map(q=>{
+  const row=[
+   q.subjectBucket||"",
+   q.problemFormat||"",
+   q.year||"",
+   q.exam||"",
+   q.questionNo||"",
+   q.subject||"",
+   q.unitLarge||"",
+   q.unitMiddle||"",
+   q.unitSmall||"",
+   q.important?"○":"",
+   q.title||"",
+   q.q||"",
+   (q.answerLabels||[]).join(","),
+   q.exp||"",
+   q.record||"",
+   q.totalCount||0,
+   q.correctCount||0,
+   q.wrongCount||0,
+   q.lastAnswered||"",
+   q.wrong?"1":""
+  ];
+  for(let i=0;i<maxChoices;i++){
+   const c=(q.choices2||[])[i]||{};
+   row.push(c.label||"",c.text||"",c.exp||"",c.record||"",c.totalCount||0,c.correctCount||0,c.wrongCount||0,c.lastAnswered||"");
+  }
+  return row;
+ });
+ const csv=[header,...rows].map(r=>r.map(v=>`"${String(v??"").replace(/"/g,'""')}"`).join(",")).join("\r\n");
+ const suffix=buckets.length?buckets.join("_"):"all";
+ const a=document.createElement("a");
+ a.href=URL.createObjectURL(new Blob(["\ufeff"+csv],{type:"text/csv;charset=utf-8"}));
+ a.download=`quiz_export_${suffix}.csv`;
+ a.click();
+ URL.revokeObjectURL(a.href);
+}
+(async()=>{db=await openDB();await reload()})();
+</script>
+</body>
+</html>

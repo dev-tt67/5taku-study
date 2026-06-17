@@ -918,38 +918,57 @@ function extractLabelsAfterPhrase(text, phrases){
 }
 function inferChoiceTruth(q, choice){
  const label=normalizeLabelToken(choice && choice.label);
- const allText=[q?.exp||"", q?.q||"", q?.title||""].join("\n");
 
+ // ① 肢ごとの解説を最優先で判定
+ // 例：ウ 正しい / ア 誤り
+ const cexp=String(choice?.exp||"").trim();
+ const compact=cexp.replace(/\s+/g,"");
+
+ if(compact){
+  const head=compact.slice(0,100);
+  if(/誤り|誤っている|誤った記述|妥当でない|正しくない/.test(head)){
+   return false;
+  }
+  if(/正しい|妥当である|正当である/.test(head)){
+   return true;
+  }
+
+  const labelPattern=new RegExp(label+"(?:は|：|:)?(正しい|誤り|誤っている|正しくない|妥当である|妥当でない)");
+  const lm=compact.match(labelPattern);
+  if(lm){
+   return /正しい|妥当である/.test(lm[1]);
+  }
+ }
+
+ // ② 全体解説から「誤っている記述はアとエ」を判定
+ const allText=[q?.exp||"", q?.q||"", q?.title||""].join("\n");
  const falseLabels=extractLabelsAfterPhrase(allText,[
   "誤っている記述は",
   "誤りである記述は",
   "誤っているものは",
   "誤りの記述は",
   "誤りは",
-  "誤っているのは"
+  "誤っているのは",
+  "正しくない記述は",
+  "妥当でない記述は"
  ]);
  if(falseLabels.length){
   return !falseLabels.includes(label);
  }
 
+ // ③ 全体解説から「正しい記述はイ、ウ、オ」を判定
  const trueLabels=extractLabelsAfterPhrase(allText,[
   "正しい記述は",
   "正しいものは",
   "正しいのは",
-  "正しい肢は"
+  "正しい肢は",
+  "妥当である記述は"
  ]);
  if(trueLabels.length){
   return trueLabels.includes(label);
  }
 
- const cexp=String(choice?.exp||"").trim();
- if(/^(誤り|誤っている|×|✕)/.test(cexp) || /誤り。|誤りです|誤っている/.test(cexp)){
-  return false;
- }
- if(/^(正しい|正解|○|〇)/.test(cexp) || /正しい。|正しいです/.test(cexp)){
-  return true;
- }
-
+ // ④ 従来仕様へのフォールバック
  return (q?.answerLabels||[]).map(x=>normalizeLabelToken(x)).includes(label);
 }
 

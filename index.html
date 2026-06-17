@@ -888,11 +888,76 @@ async function judgeQuestionAnswer(){
  if(sameSet(selectedLabels,current.answerLabels)){result.textContent="正解";current.correctCount++;stats.correct++;current.wrong=false}else{result.textContent="不正解";current.wrongCount++;stats.wrong++;current.wrong=true}
  showQuestionExplanation(); renderChoiceRecordArea(current); scrollToExplanation(); await put(current); await reload();
 }
+
+function normalizeLabelToken(s){
+ return String(s||"")
+  .replace(/肢/g,"")
+  .replace(/[，、,\s]/g,"")
+  .trim();
+}
+function splitLabelListText(s){
+ return String(s||"")
+  .replace(/[及び並びに・]/g,"、")
+  .replace(/と/g,"、")
+  .replace(/[，,]/g,"、")
+  .split("、")
+  .map(x=>normalizeLabelToken(x))
+  .filter(Boolean);
+}
+function extractLabelsAfterPhrase(text, phrases){
+ const t=String(text||"");
+ for(const p of phrases){
+  const idx=t.indexOf(p);
+  if(idx>=0){
+   const after=t.slice(idx+p.length, idx+p.length+40);
+   const m=after.match(/[ア-ンA-Za-z0-9１-９一二三四五六七八九〇○、，,・\sと及び並びに]+/);
+   if(m) return splitLabelListText(m[0]);
+  }
+ }
+ return [];
+}
+function inferChoiceTruth(q, choice){
+ const label=normalizeLabelToken(choice && choice.label);
+ const allText=[q?.exp||"", q?.q||"", q?.title||""].join("\n");
+
+ const falseLabels=extractLabelsAfterPhrase(allText,[
+  "誤っている記述は",
+  "誤りである記述は",
+  "誤っているものは",
+  "誤りの記述は",
+  "誤りは",
+  "誤っているのは"
+ ]);
+ if(falseLabels.length){
+  return !falseLabels.includes(label);
+ }
+
+ const trueLabels=extractLabelsAfterPhrase(allText,[
+  "正しい記述は",
+  "正しいものは",
+  "正しいのは",
+  "正しい肢は"
+ ]);
+ if(trueLabels.length){
+  return trueLabels.includes(label);
+ }
+
+ const cexp=String(choice?.exp||"").trim();
+ if(/^(誤り|誤っている|×|✕)/.test(cexp) || /誤り。|誤りです|誤っている/.test(cexp)){
+  return false;
+ }
+ if(/^(正しい|正解|○|〇)/.test(cexp) || /正しい。|正しいです/.test(cexp)){
+  return true;
+ }
+
+ return (q?.answerLabels||[]).map(x=>normalizeLabelToken(x)).includes(label);
+}
+
 async function judgeChoiceAnswer(ans){
  if(!current||!currentChoice)return;
- const ok=current.answerLabels.includes(String(currentChoice.label)); currentChoice.totalCount++; currentChoice.lastAnswered=now();
+ const ok=inferChoiceTruth(current,currentChoice); currentChoice.totalCount++; currentChoice.lastAnswered=now();
  if(ans===null){result.textContent="わからない";currentChoice.record="△";currentChoice.wrongCount++;current.wrong=true}else if(ans===ok){result.textContent="正解";currentChoice.correctCount++;stats.correct++}else{result.textContent="不正解";currentChoice.wrongCount++;stats.wrong++;current.wrong=true}
- choiceModeArea.classList.add("hidden"); explanation.innerHTML=`<h3>${esc(current.title||"無題")} 肢${esc(currentChoice.label)}</h3><b>${ok?"正しい記述です。":"誤りの記述です。"}</b><br>${esc(currentChoice.text)}${currentChoice.exp?`<h3>肢の解説</h3><div class="small">${esc(currentChoice.exp).replace(/\n/g,"<br>")}</div>`:""}${current.exp?`<h3>全体解説</h3><div class="small">${esc(current.exp).replace(/\n/g,"<br>")}</div>`:""}`; explanation.classList.remove("hidden"); renderChoiceRecordArea(current); scrollToExplanation(); await put(current); await reload();
+ choiceModeArea.classList.add("hidden"); explanation.innerHTML=`<h3>${esc(current.title||"無題")} 肢${esc(currentChoice.label)}</h3><b>${ok?"この肢は正しい記述です。":"この肢は誤りの記述です。"}</b><br>${esc(currentChoice.text)}${currentChoice.exp?`<h3>肢の解説</h3><div class="small">${esc(currentChoice.exp).replace(/\n/g,"<br>")}</div>`:""}${current.exp?`<h3>全体解説</h3><div class="small">${esc(current.exp).replace(/\n/g,"<br>")}</div>`:""}`; explanation.classList.remove("hidden"); renderChoiceRecordArea(current); scrollToExplanation(); await put(current); await reload();
 }
 function showQuestionExplanation(){let h=current.exp?`<h3>全体解説</h3>${esc(current.exp).replace(/\n/g,"<br>")}`:""; h+=`<h3>選択肢ごとの解説</h3>`; current.choices2.forEach(c=>{h+=`<div class="choiceExplain"><b>${esc(c.label)} ${current.answerLabels.includes(c.label)?"（正解）":""}</b><br>${esc(c.text)}${c.exp?`<br><span class="small">${esc(c.exp).replace(/\n/g,"<br>")}</span>`:""}</div>`}); explanation.innerHTML=h; explanation.classList.remove("hidden")}
 function updateRecordButtons(){["markO","markT","markX","markNone"].forEach(id=>document.getElementById(id).classList.remove("selected")); const m={"○":"markO","△":"markT","×":"markX","":"markNone"}[current?.record||""]; if(m)document.getElementById(m).classList.add("selected")}

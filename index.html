@@ -585,7 +585,7 @@ select[multiple] option{padding:7px}
 </section>
 
 <section id="syncSec" class="card hidden">
-<h2>GitHub同期</h2>
+<h2>GitHub同期 <span class='small'>JSON取得修正版</span></h2>
 <p class="small">
 PCとスマホの学習記録を、GitHubリポジトリ内の同期ファイルに保存して共有します。<br>
 GitHubの Personal Access Token（Contents の Read/Write 権限）を作成して入力してください。
@@ -1777,113 +1777,50 @@ async function replaceLocalQuestions(newQuestions){
  }
  await reload();
 }
-async function loadRemoteQuestions(cfg){
+
+async function githubApiReadJsonFile(cfg){
  const file=await githubApiGetFile(cfg);
- if(!file) return {file:null,questions:[]};
- const json=JSON.parse(b64DecodeUnicode(file.content.replace(/\n/g,"")));
- return {file,questions:(json.questions||[]).map(normalizeConflictSafe)};
-}
+ if(!file) return {file:null,json:null};
 
-
-let autoSyncTimer=null;
-let autoSyncInProgress=false;
-const SYNC_HISTORY_KEY="quizSyncHistoryV1";
-const SYNC_HISTORY_LIMIT=12;
-
-function getSyncHistory(){
- try{return JSON.parse(localStorage.getItem(SYNC_HISTORY_KEY)||"[]");}catch(e){return [];}
-}
-function saveSyncHistory(list){
- localStorage.setItem(SYNC_HISTORY_KEY,JSON.stringify(list.slice(0,SYNC_HISTORY_LIMIT)));
-}
-function addSyncHistory(label, data){
- try{
-  const list=getSyncHistory();
-  list.unshift({
-   id:"hist_"+Date.now()+"_"+Math.random().toString(36).slice(2),
-   label,
-   savedAt:new Date().toISOString(),
-   count:(data&&data.questions?data.questions.length:questions.length),
-   data:data||makeSyncPayload()
+ if(file.download_url){
+  const rawRes=await fetch(file.download_url + (file.download_url.includes("?") ? "&" : "?") + "t=" + Date.now(),{
+   headers:{
+    "Authorization":`Bearer ${cfg.token}`,
+    "Accept":"application/vnd.github.raw"
+   },
+   cache:"no-store"
   });
-  saveSyncHistory(list);
-  renderHistoryList();
- }catch(e){console.warn("history save failed",e);}
-}
-function renderHistoryList(){
- const el=document.getElementById("syncHistoryList");
- if(!el)return;
- const list=getSyncHistory();
- if(!list.length){
-  el.innerHTML="履歴はまだありません。";
-  return;
+  if(rawRes.ok){
+   const txt=await rawRes.text();
+   try{
+    return {file,json:JSON.parse(txt)};
+   }catch(e){
+    throw new Error("GitHub上の study-data.json を読み取れませんでした。JSONが途中で切れている可能性があります。PC側からもう一度アップロードしてください。詳細："+e.message);
+   }
+  }
  }
- el.innerHTML=list.map(h=>`
-  <div class="choiceExplain">
-   <b>${esc(h.label||"履歴")}</b><br>
-   ${esc(h.savedAt||"")}　${Number(h.count||0)}問<br>
-   <button class="mini" onclick="restoreHistoryData('${h.id}')">この履歴から復元</button>
-  </div>
- `).join("");
-}
-async function restoreHistoryData(id){
- const h=getSyncHistory().find(x=>x.id===id);
- if(!h){alert("履歴が見つかりません。");return;}
- if(!confirm("この履歴の状態に端末データを復元します。現在の端末データは履歴に退避してから置き換えます。よろしいですか？"))return;
- addSyncHistory("履歴復元前バックアップ",makeSyncPayload());
- await replaceLocalQuestions((h.data&&h.data.questions)||[]);
- setSyncStatus(`履歴から復元しました：${h.count||0}問`);
- alert("履歴から復元しました。");
-}
-function clearSyncHistory(){
- if(!confirm("この端末内の同期履歴を削除します。よろしいですか？"))return;
- localStorage.removeItem(SYNC_HISTORY_KEY);
- renderHistoryList();
- setSyncStatus("同期履歴を削除しました。");
-}
-function isAutoSyncEnabled(){
- const cfg=getSyncConfig();
- return !!cfg.autoSync;
-}
-function scheduleAutoSync(reason="変更"){
- if(!isAutoSyncEnabled())return;
- const cfg=getSyncConfig();
- if(!cfg.owner||!cfg.repo||!cfg.path||!cfg.token)return;
- const delay=Math.max(5,Number(cfg.autoSyncDelaySec||20))*1000;
- clearTimeout(autoSyncTimer);
- setSyncStatus(`${reason}：${Math.round(delay/1000)}秒後に自動同期します。`);
- autoSyncTimer=setTimeout(()=>autoSyncNow(reason),delay);
-}
-async function autoSyncNow(reason="自動同期"){
- if(autoSyncInProgress)return;
- const cfg=getSyncConfig();
- if(!validateSyncConfig(cfg))return;
+
+ const content=String(file.content||"").replace(/\n/g,"");
+ if(!content){
+  throw new Error("GitHubから同期ファイルを取得しましたが、内容が空でした。PC側からもう一度アップロードしてください。");
+ }
  try{
-  autoSyncInProgress=true;
-  setSyncStatus(`${reason}を実行中...`);
-  addSyncHistory(`${reason}前バックアップ`,makeSyncPayload());
-  const remote=await loadRemoteQuestions(cfg);
-  const finalQuestions=mergeQuestionArrays(questions,remote.questions);
-  await githubApiPutFile(cfg,{app:"5taku-study",version:5,syncMode:"auto-merge",exportedAt:new Date().toISOString(),questions:finalQuestions},remote.file?remote.file.sha:null);
-  await replaceLocalQuestions(finalQuestions);
-  addSyncHistory(`${reason}後バックアップ`,{app:"5taku-study",version:5,exportedAt:new Date().toISOString(),questions:finalQuestions});
-  setSyncStatus(`${reason}完了：${finalQuestions.length}問`);
+  return {file,json:JSON.parse(b64DecodeUnicode(content))};
  }catch(e){
-  console.error(e);
-  setSyncStatus((e&&e.message)||"自動同期に失敗しました。");
- }finally{
-  autoSyncInProgress=false;
+  try{
+   return {file,json:JSON.parse(atob(content))};
+  }catch(e2){
+   throw new Error("GitHub上の同期ファイルのJSON解析に失敗しました。PC側からもう一度アップロードしてください。詳細："+e.message);
+  }
  }
 }
-async function autoSyncOnStartup(){
- setTimeout(async()=>{
-  loadSyncSettings();
-  renderHistoryList();
-  if(!isAutoSyncEnabled())return;
-  const cfg=getSyncConfig();
-  if(!cfg.owner||!cfg.repo||!cfg.path||!cfg.token)return;
-  await autoSyncNow("起動時自動同期");
- },800);
+
+async function loadRemoteQuestions(cfg){
+ const result=await githubApiReadJsonFile(cfg);
+ if(!result.file) return {file:null,questions:[]};
+ const json=result.json||{};
+ const norm=(typeof normalizeConflictSafe==="function")?normalizeConflictSafe:((typeof normalizeSync==="function")?normalizeSync:normalize);
+ return {file:result.file,questions:(json.questions||[]).map(norm)};
 }
 
 async function uploadSyncData(){

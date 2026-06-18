@@ -1,4 +1,4 @@
-const CACHE_NAME="quiz-chunked-sync-history-fixed-v1";
+const CACHE_NAME="quiz-chunked-sync-global-history-fix-v1";
 const FILES=["./","./index.html","./manifest.json","./service-worker.js","./icon-192.png","./icon-512.png"];
 self.addEventListener("install",e=>{e.waitUntil(caches.open(CACHE_NAME).then(c=>c.addAll(FILES)));self.skipWaiting();});
 self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE_NAME).map(k=>caches.delete(k)))));self.clients.claim();});

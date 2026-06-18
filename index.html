@@ -585,9 +585,9 @@ select[multiple] option{padding:7px}
 </section>
 
 <section id="syncSec" class="card hidden">
-<h2>GitHub同期 <span class='small'>API直読込修正版・履歴関数修正版</span></h2>
+<h2>GitHub同期 <span class='small'>分割同期版・履歴関数修正版</span></h2>
 <p class="small">
-PCとスマホの学習記録を、GitHubリポジトリ内の同期ファイルに保存して共有します。<br>
+PCとスマホの学習記録を、GitHubリポジトリ内の分割同期ファイルに保存して共有します。<br>
 GitHubの Personal Access Token（Contents の Read/Write 権限）を作成して入力してください。
 </p>
 <div class="filters">
@@ -1822,79 +1822,91 @@ async function githubApiReadJsonFile(cfg){
  throw new Error(`GitHub同期ファイルの取得に失敗しました：${rawRes.status} ${errText}`);
 }
 
+
+function syncBasePath(cfg){
+ return String(cfg.path||"study-data.json").replace(/\.json$/,"");
+}
+function chunkPath(cfg,index){
+ return `${syncBasePath(cfg)}-part-${String(index).padStart(3,"0")}.json`;
+}
+function chunkArray(arr,size){
+ const out=[];
+ for(let i=0;i<arr.length;i+=size) out.push(arr.slice(i,i+size));
+ return out;
+}
+async function githubApiGetFileByPath(cfg,path){
+ const c={...cfg,path};
+ return await githubApiGetFile(c);
+}
+async function githubApiPutFileByPath(cfg,path,payload,sha){
+ const c={...cfg,path};
+ return await githubApiPutFile(c,payload,sha);
+}
+async function readJsonByPath(cfg,path){
+ const c={...cfg,path};
+ if(typeof githubApiReadJsonFile==="function"){
+  const r=await githubApiReadJsonFile(c);
+  return r;
+ }
+ const file=await githubApiGetFile(c);
+ if(!file) return {file:null,json:null};
+ const content=String(file.content||"").replace(/\n/g,"");
+ return {file,json:JSON.parse(b64DecodeUnicode(content))};
+}
+async function uploadChunkedSyncPayload(cfg,payload){
+ const questions=payload.questions||[];
+ const chunks=chunkArray(questions,100);
+ const parts=[];
+ for(let i=0;i<chunks.length;i++){
+  const path=chunkPath(cfg,i);
+  const existing=await githubApiGetFileByPath(cfg,path);
+  const partPayload={
+   app:"5taku-study",
+   type:"questions-part",
+   version:payload.version||6,
+   partIndex:i,
+   partCount:chunks.length,
+   exportedAt:payload.exportedAt||new Date().toISOString(),
+   questions:chunks[i]
+  };
+  await githubApiPutFileByPath(cfg,path,partPayload,existing?existing.sha:null);
+  parts.push({path,count:chunks[i].length});
+ }
+ const metaExisting=await githubApiGetFile(cfg);
+ const meta={
+  app:"5taku-study",
+  type:"chunked-sync-meta",
+  version:6,
+  chunked:true,
+  exportedAt:payload.exportedAt||new Date().toISOString(),
+  count:questions.length,
+  partCount:chunks.length,
+  parts
+ };
+ await githubApiPutFile(cfg,meta,metaExisting?metaExisting.sha:null);
+ return meta;
+}
+async function loadChunkedOrSingleRemoteQuestions(cfg){
+ const metaRead=await readJsonByPath(cfg,cfg.path);
+ if(!metaRead.file) return {file:null,questions:[]};
+ const meta=metaRead.json||{};
+ const norm=(typeof normalizeConflictSafe==="function")?normalizeConflictSafe:((typeof normalizeSync==="function")?normalizeSync:((typeof normalizeWithTimestamps==="function")?normalizeWithTimestamps:normalize));
+
+ if(meta.chunked && Array.isArray(meta.parts)){
+  let all=[];
+  for(const p of meta.parts){
+   const pr=await readJsonByPath(cfg,p.path);
+   const q=(pr.json&&pr.json.questions)||[];
+   all=all.concat(q);
+  }
+  return {file:metaRead.file,questions:all.map(norm)};
+ }
+
+ return {file:metaRead.file,questions:(meta.questions||[]).map(norm)};
+}
+
 async function loadRemoteQuestions(cfg){
- const result=await githubApiReadJsonFile(cfg);
- if(!result.file) return {file:null,questions:[]};
- const json=result.json||{};
- const norm=(typeof normalizeConflictSafe==="function")?normalizeConflictSafe:((typeof normalizeSync==="function")?normalizeSync:normalize);
- return {file:result.file,questions:(json.questions||[]).map(norm)};
-}
-
-
-const SYNC_HISTORY_KEY_FIXED="quizSyncHistoryV2";
-const SYNC_HISTORY_LIMIT_FIXED=12;
-
-function getSyncHistory(){
- try{
-  return JSON.parse(localStorage.getItem(SYNC_HISTORY_KEY_FIXED)||"[]");
- }catch(e){
-  return [];
- }
-}
-function saveSyncHistory(list){
- localStorage.setItem(SYNC_HISTORY_KEY_FIXED,JSON.stringify((list||[]).slice(0,SYNC_HISTORY_LIMIT_FIXED)));
-}
-function addSyncHistory(label, data){
- try{
-  const payload=data||makeSyncPayload();
-  const list=getSyncHistory();
-  list.unshift({
-   id:"hist_"+Date.now()+"_"+Math.random().toString(36).slice(2),
-   label:label||"同期履歴",
-   savedAt:new Date().toISOString(),
-   count:(payload&&payload.questions)?payload.questions.length:(questions?questions.length:0),
-   data:payload
-  });
-  saveSyncHistory(list);
-  if(typeof renderHistoryList==="function") renderHistoryList();
- }catch(e){
-  console.warn("同期履歴の保存に失敗しました",e);
- }
-}
-function renderHistoryList(){
- const el=document.getElementById("syncHistoryList");
- if(!el) return;
- const list=getSyncHistory();
- if(!list.length){
-  el.innerHTML="履歴はまだありません。";
-  return;
- }
- el.innerHTML=list.map(h=>`
-  <div class="choiceExplain">
-   <b>${esc(h.label||"同期履歴")}</b><br>
-   ${esc(h.savedAt||"")}　${Number(h.count||0)}問<br>
-   <button class="mini" onclick="restoreHistoryData('${h.id}')">この履歴から復元</button>
-  </div>
- `).join("");
-}
-async function restoreHistoryData(id){
- const h=getSyncHistory().find(x=>x.id===id);
- if(!h){
-  alert("履歴が見つかりません。");
-  return;
- }
- if(!confirm("この履歴の状態に端末データを復元します。現在の端末データは履歴に退避してから置き換えます。よろしいですか？")) return;
- addSyncHistory("履歴復元前バックアップ",makeSyncPayload());
- const qs=(h.data&&h.data.questions)||[];
- await replaceLocalQuestions(qs);
- setSyncStatus(`履歴から復元しました：${qs.length}問`);
- alert("履歴から復元しました。");
-}
-function clearSyncHistory(){
- if(!confirm("この端末内の同期履歴を削除します。よろしいですか？")) return;
- localStorage.removeItem(SYNC_HISTORY_KEY_FIXED);
- renderHistoryList();
- setSyncStatus("同期履歴を削除しました。");
+ return await loadChunkedOrSingleRemoteQuestions(cfg);
 }
 
 async function uploadSyncData(){
@@ -1912,7 +1924,7 @@ async function uploadSyncData(){
   setSyncStatus(mode==="merge"?"GitHubデータとマージ中...":"GitHubへアップロード中...");
   const remote=await loadRemoteQuestions(cfg);
   const finalQuestions=mode==="merge" ? mergeQuestionArrays(questions,remote.questions) : questions.map(normalizeConflictSafe);
-  await githubApiPutFile(cfg,{app:"5taku-study",version:5,syncMode:mode,exportedAt:new Date().toISOString(),questions:finalQuestions},remote.file?remote.file.sha:null);
+  await uploadChunkedSyncPayload(cfg,{app:"5taku-study",version:6,syncMode:mode,exportedAt:new Date().toISOString(),questions:finalQuestions});
 
   if(mode==="merge"){
    await replaceLocalQuestions(finalQuestions);
@@ -1951,7 +1963,7 @@ async function downloadSyncData(){
   await replaceLocalQuestions(finalQuestions);
 
   if(mode==="merge"){
-   await githubApiPutFile(cfg,{app:"5taku-study",version:5,syncMode:mode,exportedAt:new Date().toISOString(),questions:finalQuestions},remote.file.sha);
+   await uploadChunkedSyncPayload(cfg,{app:"5taku-study",version:6,syncMode:mode,exportedAt:new Date().toISOString(),questions:finalQuestions});
   }
 
   saveSyncSettings();

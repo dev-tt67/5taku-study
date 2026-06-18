@@ -585,7 +585,7 @@ select[multiple] option{padding:7px}
 </section>
 
 <section id="syncSec" class="card hidden">
-<h2>GitHub同期 <span class='small'>JSON取得修正版・履歴関数修正版</span></h2>
+<h2>GitHub同期 <span class='small'>API直読込修正版・履歴関数修正版</span></h2>
 <p class="small">
 PCとスマホの学習記録を、GitHubリポジトリ内の同期ファイルに保存して共有します。<br>
 GitHubの Personal Access Token（Contents の Read/Write 権限）を作成して入力してください。
@@ -1779,40 +1779,47 @@ async function replaceLocalQuestions(newQuestions){
 }
 
 async function githubApiReadJsonFile(cfg){
- const file=await githubApiGetFile(cfg);
- if(!file) return {file:null,json:null};
+ // まず metadata を取得して sha を確保
+ const meta=await githubApiGetFile(cfg);
+ if(!meta) return {file:null,json:null};
 
- if(file.download_url){
-  const rawRes=await fetch(file.download_url + (file.download_url.includes("?") ? "&" : "?") + "t=" + Date.now(),{
-   headers:{
-    "Authorization":`Bearer ${cfg.token}`,
-    "Accept":"application/vnd.github.raw"
-   },
-   cache:"no-store"
-  });
-  if(rawRes.ok){
-   const txt=await rawRes.text();
+ // raw.githubusercontent.com ではなく api.github.com の raw media type から読む
+ // これによりブラウザの CORS / Failed to fetch を回避しやすくする
+ const url=`https://api.github.com/repos/${encodeURIComponent(cfg.owner)}/${encodeURIComponent(cfg.repo)}/contents/${cfg.path}`;
+ const rawRes=await fetch(url + (url.includes("?") ? "&" : "?") + "t=" + Date.now(),{
+  headers:{
+   "Accept":"application/vnd.github.raw",
+   "Authorization":`Bearer ${cfg.token}`,
+   "X-GitHub-Api-Version":"2022-11-28"
+  },
+  cache:"no-store"
+ });
+
+ if(rawRes.ok){
+  const txt=await rawRes.text();
+  try{
+   return {file:meta,json:JSON.parse(txt)};
+  }catch(e){
+   throw new Error("GitHub上の study-data.json のJSON解析に失敗しました。PC側からもう一度アップロードしてください。詳細："+e.message);
+  }
+ }
+
+ // fallback: content API の base64 content から読む
+ const content=String(meta.content||"").replace(/\n/g,"");
+ if(content){
+  try{
+   return {file:meta,json:JSON.parse(b64DecodeUnicode(content))};
+  }catch(e){
    try{
-    return {file,json:JSON.parse(txt)};
-   }catch(e){
-    throw new Error("GitHub上の study-data.json を読み取れませんでした。JSONが途中で切れている可能性があります。PC側からもう一度アップロードしてください。詳細："+e.message);
+    return {file:meta,json:JSON.parse(atob(content))};
+   }catch(e2){
+    throw new Error("GitHub同期ファイルの解析に失敗しました。詳細："+e.message);
    }
   }
  }
 
- const content=String(file.content||"").replace(/\n/g,"");
- if(!content){
-  throw new Error("GitHubから同期ファイルを取得しましたが、内容が空でした。PC側からもう一度アップロードしてください。");
- }
- try{
-  return {file,json:JSON.parse(b64DecodeUnicode(content))};
- }catch(e){
-  try{
-   return {file,json:JSON.parse(atob(content))};
-  }catch(e2){
-   throw new Error("GitHub上の同期ファイルのJSON解析に失敗しました。PC側からもう一度アップロードしてください。詳細："+e.message);
-  }
- }
+ const errText=await rawRes.text().catch(()=>"");
+ throw new Error(`GitHub同期ファイルの取得に失敗しました：${rawRes.status} ${errText}`);
 }
 
 async function loadRemoteQuestions(cfg){

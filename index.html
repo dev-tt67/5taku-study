@@ -585,7 +585,7 @@ select[multiple] option{padding:7px}
 </section>
 
 <section id="syncSec" class="card hidden">
-<h2>GitHub同期 <span class='small'>JSON取得修正版</span></h2>
+<h2>GitHub同期 <span class='small'>JSON取得修正版・履歴関数修正版</span></h2>
 <p class="small">
 PCとスマホの学習記録を、GitHubリポジトリ内の同期ファイルに保存して共有します。<br>
 GitHubの Personal Access Token（Contents の Read/Write 権限）を作成して入力してください。
@@ -1821,6 +1821,73 @@ async function loadRemoteQuestions(cfg){
  const json=result.json||{};
  const norm=(typeof normalizeConflictSafe==="function")?normalizeConflictSafe:((typeof normalizeSync==="function")?normalizeSync:normalize);
  return {file:result.file,questions:(json.questions||[]).map(norm)};
+}
+
+
+const SYNC_HISTORY_KEY_FIXED="quizSyncHistoryV2";
+const SYNC_HISTORY_LIMIT_FIXED=12;
+
+function getSyncHistory(){
+ try{
+  return JSON.parse(localStorage.getItem(SYNC_HISTORY_KEY_FIXED)||"[]");
+ }catch(e){
+  return [];
+ }
+}
+function saveSyncHistory(list){
+ localStorage.setItem(SYNC_HISTORY_KEY_FIXED,JSON.stringify((list||[]).slice(0,SYNC_HISTORY_LIMIT_FIXED)));
+}
+function addSyncHistory(label, data){
+ try{
+  const payload=data||makeSyncPayload();
+  const list=getSyncHistory();
+  list.unshift({
+   id:"hist_"+Date.now()+"_"+Math.random().toString(36).slice(2),
+   label:label||"同期履歴",
+   savedAt:new Date().toISOString(),
+   count:(payload&&payload.questions)?payload.questions.length:(questions?questions.length:0),
+   data:payload
+  });
+  saveSyncHistory(list);
+  if(typeof renderHistoryList==="function") renderHistoryList();
+ }catch(e){
+  console.warn("同期履歴の保存に失敗しました",e);
+ }
+}
+function renderHistoryList(){
+ const el=document.getElementById("syncHistoryList");
+ if(!el) return;
+ const list=getSyncHistory();
+ if(!list.length){
+  el.innerHTML="履歴はまだありません。";
+  return;
+ }
+ el.innerHTML=list.map(h=>`
+  <div class="choiceExplain">
+   <b>${esc(h.label||"同期履歴")}</b><br>
+   ${esc(h.savedAt||"")}　${Number(h.count||0)}問<br>
+   <button class="mini" onclick="restoreHistoryData('${h.id}')">この履歴から復元</button>
+  </div>
+ `).join("");
+}
+async function restoreHistoryData(id){
+ const h=getSyncHistory().find(x=>x.id===id);
+ if(!h){
+  alert("履歴が見つかりません。");
+  return;
+ }
+ if(!confirm("この履歴の状態に端末データを復元します。現在の端末データは履歴に退避してから置き換えます。よろしいですか？")) return;
+ addSyncHistory("履歴復元前バックアップ",makeSyncPayload());
+ const qs=(h.data&&h.data.questions)||[];
+ await replaceLocalQuestions(qs);
+ setSyncStatus(`履歴から復元しました：${qs.length}問`);
+ alert("履歴から復元しました。");
+}
+function clearSyncHistory(){
+ if(!confirm("この端末内の同期履歴を削除します。よろしいですか？")) return;
+ localStorage.removeItem(SYNC_HISTORY_KEY_FIXED);
+ renderHistoryList();
+ setSyncStatus("同期履歴を削除しました。");
 }
 
 async function uploadSyncData(){

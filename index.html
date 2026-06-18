@@ -54,7 +54,7 @@ main{max-width:920px;margin:0 auto;padding:18px}
 }
 .tabs{
   display:grid;
-  grid-template-columns:repeat(4,1fr);
+  grid-template-columns:repeat(auto-fit,minmax(110px,1fr));
   gap:10px;
   margin-bottom:18px;
   background:rgba(255,255,255,.55);
@@ -384,6 +384,7 @@ select[multiple] option{padding:7px}
 <button id="tabImport" onclick="showTab('importSec')">取込/出力</button>
 <button id="tabAdd" onclick="showTab('add')">登録</button>
 <button id="tabList" onclick="showTab('list')">一覧</button>
+<button id="tabSync" onclick="showTab('syncSec')">同期</button>
 </div>
 
 <section id="quiz" class="card">
@@ -582,6 +583,36 @@ select[multiple] option{padding:7px}
 </div>
 <div id="listArea"></div>
 </section>
+
+<section id="syncSec" class="card hidden">
+<h2>GitHub同期</h2>
+<p class="small">
+PCとスマホの学習記録を、GitHubリポジトリ内の同期ファイルに保存して共有します。<br>
+GitHubの Personal Access Token（Contents の Read/Write 権限）を作成して入力してください。
+</p>
+<div class="filters">
+  <div><label>GitHubユーザー名</label><input id="syncOwner" placeholder="例：dev-tt67"></div>
+  <div><label>リポジトリ名</label><input id="syncRepo" placeholder="例：5taku-study"></div>
+</div>
+<label>同期ファイルパス</label>
+<input id="syncPath" value="study-data.json">
+<label>GitHub Token</label>
+<input id="syncToken" type="password" placeholder="github_pat_...">
+<div class="filters">
+  <button onclick="saveSyncSettings()">同期設定を保存</button>
+  <button class="secondary" onclick="loadSyncSettings()">同期設定を読込</button>
+</div>
+<div class="filters">
+  <button onclick="uploadSyncData()">この端末のデータをGitHubへアップロード</button>
+  <button class="secondary" onclick="downloadSyncData()">GitHubのデータをこの端末へ復元</button>
+</div>
+<p class="small">
+※アップロード：この端末の問題データ・解答履歴でGitHub上の同期ファイルを上書きします。<br>
+※復元：GitHub上の同期ファイルでこの端末のデータを置き換えます。
+</p>
+<div id="syncStatus" class="explainBox small">同期状態：未実行</div>
+</section>
+
 </main>
 
 <script>
@@ -635,7 +666,7 @@ function matchKw(q,kw){kw=String(kw||"").trim().toLowerCase();if(!kw)return true
 function sameSet(a,b){const A=[...new Set(a.map(String))].sort(),B=[...new Set(b.map(String))].sort();return A.length===B.length&&A.every((v,i)=>v===B[i])}
 
 async function reload(){questions=await getAll(); refreshFilters(); renderList(); updateFilterMatchCount()}
-function showTab(id){["quiz","importSec","add","list"].forEach(x=>document.getElementById(x).classList.add("hidden"));["tabQuiz","tabImport","tabAdd","tabList"].forEach(x=>document.getElementById(x).classList.remove("active"));document.getElementById(id).classList.remove("hidden");({quiz:tabQuiz,importSec:tabImport,add:tabAdd,list:tabList}[id]).classList.add("active")}
+function showTab(id){["quiz","importSec","add","list","syncSec"].forEach(x=>document.getElementById(x).classList.add("hidden"));["tabQuiz","tabImport","tabAdd","tabList","tabSync"].forEach(x=>document.getElementById(x).classList.remove("active"));document.getElementById(id).classList.remove("hidden");({quiz:tabQuiz,importSec:tabImport,add:tabAdd,list:tabList,syncSec:tabSync}[id]).classList.add("active")}
 function setOpts(sel,vals,all="すべて"){const cur=sel.value;sel.innerHTML=`<option value="">${all}</option>`+vals.filter(Boolean).map(v=>`<option>${esc(v)}</option>`).join("");if(vals.includes(cur))sel.value=cur}
 function uniq(a){return [...new Set(a.filter(Boolean))].sort()}
 
@@ -1387,7 +1418,7 @@ function exportCSV(){
  const maxChoices=Math.max(6,...target.map(q=>(q.choices2||[]).length));
  const header=["科目区分","問題形式","出題年度","試験名","問","科目","大分類","中分類","小分類","重要","タイトル","本文","正解ラベル","全体解説","問題記録","問題総解答回数","問題正答回数","問題誤答回数","問題最終解答日","復習対象"];
  for(let i=1;i<=maxChoices;i++){
-  header.push(`選択肢ラベル${i}`,`選択肢${i}`,`選択肢${i}解説`,`選択肢${i}記録`,`選択肢${i}総解答回数`,`選択肢${i}正答回数`,`選択肢${i}誤答回数`,`選択肢${i}最終解答日`);
+  header.push(`選択肢ラベル${i}`,`選択肢${i}`,`選択肢${i}解説`,`選択肢${i}記録`,`選択肢${i}重要肢`,`選択肢${i}総解答回数`,`選択肢${i}正答回数`,`選択肢${i}誤答回数`,`選択肢${i}最終解答日`);
  }
  const rows=target.map(q=>{
   const row=[
@@ -1414,7 +1445,7 @@ function exportCSV(){
   ];
   for(let i=0;i<maxChoices;i++){
    const c=(q.choices2||[])[i]||{};
-   row.push(c.label||"",c.text||"",c.exp||"",c.record||"",c.totalCount||0,c.correctCount||0,c.wrongCount||0,c.lastAnswered||"");
+   row.push(c.label||"",c.text||"",c.exp||"",c.record||"",c.importantChoice?"1":"",c.totalCount||0,c.correctCount||0,c.wrongCount||0,c.lastAnswered||"");
   }
   return row;
  });
@@ -1426,6 +1457,110 @@ function exportCSV(){
  a.click();
  URL.revokeObjectURL(a.href);
 }
+
+function setSyncStatus(msg){
+ const el=document.getElementById("syncStatus");
+ if(el) el.textContent="同期状態："+msg;
+}
+function b64EncodeUnicode(str){return btoa(unescape(encodeURIComponent(str)));}
+function b64DecodeUnicode(str){return decodeURIComponent(escape(atob(str)));}
+function getSyncConfig(){
+ return {
+  owner:(document.getElementById("syncOwner")?.value||"").trim(),
+  repo:(document.getElementById("syncRepo")?.value||"").trim(),
+  path:(document.getElementById("syncPath")?.value||"study-data.json").trim(),
+  token:(document.getElementById("syncToken")?.value||"").trim()
+ };
+}
+function validateSyncConfig(cfg){
+ if(!cfg.owner||!cfg.repo||!cfg.path||!cfg.token){
+  alert("GitHubユーザー名、リポジトリ名、同期ファイルパス、Tokenを入力してください。");
+  return false;
+ }
+ return true;
+}
+function saveSyncSettings(){
+ const cfg=getSyncConfig();
+ localStorage.setItem("quizGitHubSyncConfig",JSON.stringify(cfg));
+ setSyncStatus("設定を保存しました。");
+}
+function loadSyncSettings(){
+ try{
+  const cfg=JSON.parse(localStorage.getItem("quizGitHubSyncConfig")||"{}");
+  if(document.getElementById("syncOwner")) syncOwner.value=cfg.owner||"";
+  if(document.getElementById("syncRepo")) syncRepo.value=cfg.repo||"";
+  if(document.getElementById("syncPath")) syncPath.value=cfg.path||"study-data.json";
+  if(document.getElementById("syncToken")) syncToken.value=cfg.token||"";
+  if(cfg.owner||cfg.repo||cfg.token) setSyncStatus("設定を読み込みました。");
+ }catch(e){}
+}
+async function githubApiGetFile(cfg){
+ const url=`https://api.github.com/repos/${encodeURIComponent(cfg.owner)}/${encodeURIComponent(cfg.repo)}/contents/${cfg.path}`;
+ const res=await fetch(url,{headers:{
+  "Accept":"application/vnd.github+json",
+  "Authorization":`Bearer ${cfg.token}`,
+  "X-GitHub-Api-Version":"2022-11-28"
+ }});
+ if(res.status===404) return null;
+ if(!res.ok) throw new Error(`GitHub取得エラー：${res.status} ${await res.text()}`);
+ return await res.json();
+}
+async function githubApiPutFile(cfg,payload,sha){
+ const url=`https://api.github.com/repos/${encodeURIComponent(cfg.owner)}/${encodeURIComponent(cfg.repo)}/contents/${cfg.path}`;
+ const body={message:`Update study data ${new Date().toISOString()}`,content:b64EncodeUnicode(JSON.stringify(payload,null,2))};
+ if(sha) body.sha=sha;
+ const res=await fetch(url,{method:"PUT",headers:{
+  "Accept":"application/vnd.github+json",
+  "Authorization":`Bearer ${cfg.token}`,
+  "X-GitHub-Api-Version":"2022-11-28",
+  "Content-Type":"application/json"
+ },body:JSON.stringify(body)});
+ if(!res.ok) throw new Error(`GitHub保存エラー：${res.status} ${await res.text()}`);
+ return await res.json();
+}
+function makeSyncPayload(){
+ return {app:"5taku-study",version:1,exportedAt:new Date().toISOString(),questions:questions};
+}
+async function uploadSyncData(){
+ const cfg=getSyncConfig();
+ if(!validateSyncConfig(cfg)) return;
+ if(!confirm("この端末の問題データ・学習記録でGitHub上の同期ファイルを上書きします。よろしいですか？")) return;
+ try{
+  setSyncStatus("GitHubへアップロード中...");
+  const existing=await githubApiGetFile(cfg);
+  await githubApiPutFile(cfg,makeSyncPayload(),existing?existing.sha:null);
+  saveSyncSettings();
+  setSyncStatus(`アップロード完了：${questions.length}問を保存しました。`);
+ }catch(e){
+  console.error(e);
+  setSyncStatus(e.message||"アップロードに失敗しました。");
+  alert(e.message||"アップロードに失敗しました。");
+ }
+}
+async function downloadSyncData(){
+ const cfg=getSyncConfig();
+ if(!validateSyncConfig(cfg)) return;
+ if(!confirm("GitHub上の同期データで、この端末の登録済み問題・学習記録を置き換えます。よろしいですか？")) return;
+ try{
+  setSyncStatus("GitHubからダウンロード中...");
+  const file=await githubApiGetFile(cfg);
+  if(!file){setSyncStatus("同期ファイルが見つかりません。");alert("同期ファイルが見つかりません。先にPC側でアップロードしてください。");return;}
+  const json=JSON.parse(b64DecodeUnicode(file.content.replace(/\n/g,"")));
+  const imported=(json.questions||[]).map(normalize);
+  await clearStore();
+  for(const q of imported){await put(q);}
+  await reload();
+  saveSyncSettings();
+  setSyncStatus(`復元完了：${imported.length}問を読み込みました。`);
+  alert("GitHub同期データをこの端末に復元しました。");
+ }catch(e){
+  console.error(e);
+  setSyncStatus(e.message||"復元に失敗しました。");
+  alert(e.message||"復元に失敗しました。");
+ }
+}
+window.addEventListener("load",()=>setTimeout(loadSyncSettings,300));
+
 (async()=>{db=await openDB();await reload()})();
 </script>
 </body>

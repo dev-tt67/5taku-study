@@ -6,7 +6,8 @@
 <title>5択問題アプリ 安定版</title>
 <link rel="manifest" href="./manifest.json">
 <meta name="theme-color" content="#222222">
-<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js">window.addEventListener('load',()=>setTimeout(renderHistoryList,500));
+</script>
 <style>
 :root{
   --bg:#eef6fb;
@@ -1909,6 +1910,82 @@ async function loadRemoteQuestions(cfg){
  return await loadChunkedOrSingleRemoteQuestions(cfg);
 }
 
+
+const SYNC_HISTORY_KEY_FIXED="quizSyncHistoryV3";
+const SYNC_HISTORY_LIMIT_FIXED=15;
+
+function getSyncHistory(){
+ try{
+  return JSON.parse(localStorage.getItem(SYNC_HISTORY_KEY_FIXED)||"[]");
+ }catch(e){
+  return [];
+ }
+}
+function saveSyncHistory(list){
+ localStorage.setItem(SYNC_HISTORY_KEY_FIXED,JSON.stringify((list||[]).slice(0,SYNC_HISTORY_LIMIT_FIXED)));
+}
+function addSyncHistory(label,data){
+ try{
+  const payload=data||makeSyncPayload();
+  const list=getSyncHistory();
+  list.unshift({
+   id:"hist_"+Date.now()+"_"+Math.random().toString(36).slice(2),
+   label:label||"同期履歴",
+   savedAt:new Date().toISOString(),
+   count:(payload&&payload.questions)?payload.questions.length:(Array.isArray(questions)?questions.length:0),
+   data:payload
+  });
+  saveSyncHistory(list);
+  if(typeof renderHistoryList==="function") renderHistoryList();
+ }catch(e){
+  console.warn("同期履歴の保存に失敗しました",e);
+ }
+}
+function renderHistoryList(){
+ const el=document.getElementById("syncHistoryList");
+ if(!el)return;
+ const list=getSyncHistory();
+ if(!list.length){
+  el.innerHTML="履歴はまだありません。";
+  return;
+ }
+ el.innerHTML=list.map(h=>`
+  <div class="choiceExplain">
+   <b>${esc(h.label||"同期履歴")}</b><br>
+   ${esc(h.savedAt||"")}　${Number(h.count||0)}問<br>
+   <button class="mini" onclick="restoreHistoryData('${h.id}')">この履歴から復元</button>
+  </div>
+ `).join("");
+}
+async function restoreHistoryData(id){
+ const h=getSyncHistory().find(x=>x.id===id);
+ if(!h){
+  alert("履歴が見つかりません。");
+  return;
+ }
+ if(!confirm("この履歴の状態に端末データを復元します。現在の端末データは履歴に退避してから置き換えます。よろしいですか？"))return;
+ safeAddSyncHistory("履歴復元前バックアップ",makeSyncPayload());
+ const qs=(h.data&&h.data.questions)||[];
+ await replaceLocalQuestions(qs);
+ setSyncStatus(`履歴から復元しました：${qs.length}問`);
+ alert("履歴から復元しました。");
+}
+function clearSyncHistory(){
+ if(!confirm("この端末内の同期履歴を削除します。よろしいですか？"))return;
+ localStorage.removeItem(SYNC_HISTORY_KEY_FIXED);
+ renderHistoryList();
+ setSyncStatus("同期履歴を削除しました。");
+}
+
+
+function safeAddSyncHistory(label,data){
+ try{
+  if(typeof addSyncHistory==="function") addSyncHistory(label,data);
+ }catch(e){
+  console.warn("同期履歴保存をスキップしました",e);
+ }
+}
+
 async function uploadSyncData(){
  const cfg=getSyncConfig();
  if(!validateSyncConfig(cfg)) return;
@@ -1920,7 +1997,7 @@ async function uploadSyncData(){
  if(!confirm(msg)) return;
 
  try{
-  addSyncHistory("手動アップロード前バックアップ",makeSyncPayload());
+  safeAddSyncHistory("手動アップロード前バックアップ",makeSyncPayload());
   setSyncStatus(mode==="merge"?"GitHubデータとマージ中...":"GitHubへアップロード中...");
   const remote=await loadRemoteQuestions(cfg);
   const finalQuestions=mode==="merge" ? mergeQuestionArrays(questions,remote.questions) : questions.map(normalizeConflictSafe);
@@ -1931,7 +2008,7 @@ async function uploadSyncData(){
   }
 
   saveSyncSettings();
-  addSyncHistory("手動アップロード後バックアップ",{app:"5taku-study",version:5,exportedAt:new Date().toISOString(),questions:finalQuestions});
+  safeAddSyncHistory("手動アップロード後バックアップ",{app:"5taku-study",version:5,exportedAt:new Date().toISOString(),questions:finalQuestions});
   setSyncStatus(`${mode==="merge"?"マージ同期":"完全上書き"}アップロード完了：${finalQuestions.length}問を保存しました。`);
  }catch(e){
   console.error(e);
@@ -1950,7 +2027,7 @@ async function downloadSyncData(){
  if(!confirm(msg)) return;
 
  try{
-  addSyncHistory("手動復元前バックアップ",makeSyncPayload());
+  safeAddSyncHistory("手動復元前バックアップ",makeSyncPayload());
   setSyncStatus(mode==="merge"?"GitHubから取得してマージ中...":"GitHubからダウンロード中...");
   const remote=await loadRemoteQuestions(cfg);
   if(!remote.file){
@@ -1967,7 +2044,7 @@ async function downloadSyncData(){
   }
 
   saveSyncSettings();
-  addSyncHistory("手動復元後バックアップ",{app:"5taku-study",version:5,exportedAt:new Date().toISOString(),questions:finalQuestions});
+  safeAddSyncHistory("手動復元後バックアップ",{app:"5taku-study",version:5,exportedAt:new Date().toISOString(),questions:finalQuestions});
   setSyncStatus(`${mode==="merge"?"マージ復元":"完全復元"}完了：${finalQuestions.length}問を読み込みました。`);
   alert("同期が完了しました。");
  }catch(e){
@@ -1979,6 +2056,7 @@ async function downloadSyncData(){
 window.addEventListener("load",()=>{setTimeout(loadSyncSettings,300); autoSyncOnStartup();});
 
 (async()=>{db=await openDB();await reload()})();
+window.addEventListener('load',()=>setTimeout(renderHistoryList,500));
 </script>
 </body>
 </html>

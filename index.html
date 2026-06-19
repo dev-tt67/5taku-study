@@ -25,6 +25,129 @@ document.addEventListener("click", async function(e){
  }
 }, true);
 
+
+
+// ==== 肢単位ステータス完全分離修正版 ====
+window.__choiceUnitActive = window.__choiceUnitActive || {questionId:null, choiceIndex:-1, choiceLabel:""};
+
+function choiceUnitFindActiveIndex(){
+ try{
+  if(typeof current==="undefined" || !current) return -1;
+  if(window.__choiceUnitActive && window.__choiceUnitActive.questionId===current.id && window.__choiceUnitActive.choiceIndex>=0){
+   return window.__choiceUnitActive.choiceIndex;
+  }
+  const text = document.body.innerText || "";
+  const m = text.match(/肢\s*([ア-ンA-Za-z0-9１-９一二三四五六七八九〇])/);
+  if(m){
+   const lab = String(m[1]);
+   const idx = (current.choices2||[]).findIndex(c => String(c.label||"")===lab);
+   if(idx>=0){
+    window.__choiceUnitActive={questionId:current.id, choiceIndex:idx, choiceLabel:lab};
+    return idx;
+   }
+  }
+  const choices=current.choices2||[];
+  for(let i=0;i<choices.length;i++){
+   const body=String(choices[i].text||"").slice(0,35);
+   if(body && text.includes(body)){
+    window.__choiceUnitActive={questionId:current.id, choiceIndex:i, choiceLabel:choices[i].label||""};
+    return i;
+   }
+  }
+ }catch(e){}
+ return -1;
+}
+
+function choiceUnitIsActive(){
+ try{
+  if(typeof current==="undefined" || !current) return false;
+  const text=document.body.innerText||"";
+  if(/この記述は正しいですか/.test(text)) return true;
+  if(/肢\s*[ア-ンA-Za-z0-9１-９]/.test(text) && /正しい|誤り|わからない/.test(text)) return true;
+  if(document.body.dataset.mode==="choice") return true;
+ }catch(e){}
+ return false;
+}
+
+function choiceUnitTouchImportant(q,i){
+ if(typeof touchChoiceImportant==="function") touchChoiceImportant(q,i);
+ else{
+  const t=new Date().toISOString();
+  q.choices2[i].updatedAt=t;
+  q.choices2[i].importantUpdatedAt=t;
+  q.choices2[i].choiceImportantUpdatedAt=t;
+ }
+}
+
+function choiceUnitTouchRecord(q,i){
+ if(typeof touchChoiceRecord==="function") touchChoiceRecord(q,i);
+ else{
+  const t=new Date().toISOString();
+  q.choices2[i].updatedAt=t;
+  q.choices2[i].recordUpdatedAt=t;
+  q.choices2[i].choiceRecordUpdatedAt=t;
+ }
+}
+
+async function choiceUnitPersist(reason){
+ if(typeof current==="undefined" || !current) return;
+ if(typeof put==="function") await put(typeof ensureConflictSafeStamps==="function" ? ensureConflictSafeStamps(current) : current);
+ if(typeof reload==="function") await reload();
+ if(typeof scheduleAutoSync==="function") scheduleAutoSync(reason||"肢記録更新");
+}
+
+function choiceUnitUpdateButtons(){
+ try{
+  if(!choiceUnitIsActive()) return;
+  const idx=choiceUnitFindActiveIndex();
+  if(idx<0 || !current || !current.choices2 || !current.choices2[idx]) return;
+  const c=current.choices2[idx];
+  const buttons=[...document.querySelectorAll("button")];
+  for(const b of buttons){
+   const t=(b.textContent||"").trim();
+   if(t==="重要にする" || t==="重要を外す" || t==="重要"){
+    b.textContent = c.importantChoice ? "重要を外す" : "重要にする";
+    b.classList.toggle("important-on", !!c.importantChoice);
+   }
+   if(["○","△","×","未設定"].includes(t)){
+    b.classList.toggle("active", String(c.record||"")===t || (!c.record && t==="未設定"));
+   }
+  }
+ }catch(e){}
+}
+
+document.addEventListener("click", async function(e){
+ const btn=e.target.closest("button");
+ if(!btn || !choiceUnitIsActive()) return;
+ const label=(btn.textContent||"").trim();
+ const idx=choiceUnitFindActiveIndex();
+ if(idx<0 || typeof current==="undefined" || !current || !current.choices2 || !current.choices2[idx]) return;
+
+ if(label==="重要にする" || label==="重要を外す" || label==="重要"){
+  e.preventDefault();
+  e.stopImmediatePropagation();
+  current.choices2[idx].importantChoice = !current.choices2[idx].importantChoice;
+  choiceUnitTouchImportant(current,idx);
+  await choiceUnitPersist("肢重要更新");
+  setTimeout(choiceUnitUpdateButtons,100);
+  return false;
+ }
+
+ if(label==="○" || label==="△" || label==="×" || label==="未設定"){
+  e.preventDefault();
+  e.stopImmediatePropagation();
+  current.choices2[idx].record = (label==="未設定") ? "" : label;
+  choiceUnitTouchRecord(current,idx);
+  await choiceUnitPersist("肢記録更新");
+  setTimeout(choiceUnitUpdateButtons,100);
+  return false;
+ }
+}, true);
+
+new MutationObserver(()=>setTimeout(choiceUnitUpdateButtons,50)).observe(document.body,{childList:true,subtree:true});
+window.addEventListener("load",()=>setTimeout(choiceUnitUpdateButtons,500));
+// ==== 肢単位ステータス完全分離修正版ここまで ====
+
 </script>
 <style>
 :root{

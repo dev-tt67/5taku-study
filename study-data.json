@@ -3,8 +3,8 @@
   "type": "chunked-sync-meta",
   "version": 6,
   "chunked": true,
-  "exportedAt": "2026-06-18T23:08:08.755Z",
-  "count": 640,
+  "exportedAt": "2026-06-19T10:28:10.867Z",
+  "count": 641,
   "partCount": 7,
   "parts": [
     {
@@ -33,7 +33,7 @@
     },
     {
       "path": "study-data-part-006.json",
-      "count": 40
+      "count": 41
     }
   ]
 }

@@ -3,9 +3,9 @@
   "type": "chunked-sync-meta",
   "schemaVersion": 10,
   "chunked": true,
-  "exportedAt": "2026-06-20T12:33:09.114Z",
-  "count": 919,
-  "partCount": 13,
+  "exportedAt": "2026-06-20T12:35:16.051Z",
+  "count": 278,
+  "partCount": 4,
   "parts": [
     {
       "path": "study-data-part-000.json",
@@ -21,43 +21,7 @@
     },
     {
       "path": "study-data-part-003.json",
-      "count": 75
-    },
-    {
-      "path": "study-data-part-004.json",
-      "count": 75
-    },
-    {
-      "path": "study-data-part-005.json",
-      "count": 75
-    },
-    {
-      "path": "study-data-part-006.json",
-      "count": 75
-    },
-    {
-      "path": "study-data-part-007.json",
-      "count": 75
-    },
-    {
-      "path": "study-data-part-008.json",
-      "count": 75
-    },
-    {
-      "path": "study-data-part-009.json",
-      "count": 75
-    },
-    {
-      "path": "study-data-part-010.json",
-      "count": 75
-    },
-    {
-      "path": "study-data-part-011.json",
-      "count": 75
-    },
-    {
-      "path": "study-data-part-012.json",
-      "count": 19
+      "count": 53
     }
   ]
 }

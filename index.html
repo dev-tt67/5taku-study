@@ -586,7 +586,7 @@ select[multiple] option{padding:7px}
 </section>
 
 <section id="syncSec" class="card hidden">
-<h2>GitHub同期 <span class="small">問肢ステータス同期保持FIX</span> <span class='small'>問単位・肢単位ステータス分離FIX</span> <span class='small'>分割同期版・同期関数完全修正版・同期関数完全修正版・履歴関数修正版</span></h2>
+<h2>GitHub同期 <span class='small'>CSV同期データ構造FIX</span> <span class='small'>問単位・肢単位ステータス分離FIX</span> <span class='small'>分割同期版・同期関数完全修正版・同期関数完全修正版・履歴関数修正版</span></h2>
 <p class="small">
 PCとスマホの学習記録を、GitHubリポジトリ内の分割同期ファイルに保存して共有します。<br>
 GitHubの Personal Access Token（Contents の Read/Write 権限）を作成して入力してください。
@@ -2271,78 +2271,322 @@ window.addEventListener("load",()=>{setTimeout(loadSyncSettings,300); if(typeof 
 (async()=>{db=await openDB();await reload()})();
 window.addEventListener('load',()=>setTimeout(window.renderHistoryList,500));
 
-// ==== 問肢ステータス同期・タイムスタンプ保持FIX ====
-function _ssNow(){return new Date().toISOString();}
-function _ssStr(v){return String(v||"");}
-function _ssMax(){return Array.from(arguments).map(x=>String(x||"")).sort().pop()||_ssNow();}
-function _ssPick(a,b,key){const at=_ssStr(a&&a[key]),bt=_ssStr(b&&b[key]); if(!at&&bt)return b||{}; if(at&&!bt)return a||{}; return bt>at?(b||{}):(a||{});} 
-function _choiceByLabel(arr,label){return (arr||[]).find(c=>String(c.label||"")===String(label||""));}
-function normalizeConflictSafe(q){
- const src=q||{};
- const n=normalize(src);
- const t=_ssNow();
- n.updatedAt=src.updatedAt||t;
- n.dataUpdatedAt=src.dataUpdatedAt||src.updatedAt||t;
- n.importantUpdatedAt=src.importantUpdatedAt||src.updatedAt||t;
- n.recordUpdatedAt=src.recordUpdatedAt||src.updatedAt||t;
- n.choices2=(n.choices2||[]).map((c,i)=>{
-  const oc=_choiceByLabel(src.choices2,c.label)||((src.choices2||[])[i])||{};
-  return {...c,
-   importantChoice:!!(oc.importantChoice!==undefined?oc.importantChoice:c.importantChoice),
-   record:(oc.record!==undefined?oc.record:c.record)||"",
-   updatedAt:oc.updatedAt||t,
-   dataUpdatedAt:oc.dataUpdatedAt||oc.updatedAt||t,
-   choiceDataUpdatedAt:oc.choiceDataUpdatedAt||oc.dataUpdatedAt||oc.updatedAt||t,
-   importantUpdatedAt:oc.importantUpdatedAt||oc.updatedAt||t,
-   choiceImportantUpdatedAt:oc.choiceImportantUpdatedAt||oc.importantUpdatedAt||oc.updatedAt||t,
-   recordUpdatedAt:oc.recordUpdatedAt||oc.updatedAt||t,
-   choiceRecordUpdatedAt:oc.choiceRecordUpdatedAt||oc.recordUpdatedAt||oc.updatedAt||t
-  };
- });
- return n;
+
+// ==== データ構造正規化FIX：CSV出力・同期JSON共通 ====
+function __nowIso(){ return new Date().toISOString(); }
+function __s(v){ return String(v ?? ""); }
+function __b(v){ return !!v; }
+function __n(v){ return Number(v || 0); }
+function __latest(){
+ return Array.from(arguments).map(v=>String(v||"")).sort().pop() || __nowIso();
 }
-function touchProblemImportant(q){const t=_ssNow(); q.importantUpdatedAt=t; q.updatedAt=t; return q;}
-function touchProblemRecord(q){const t=_ssNow(); q.recordUpdatedAt=t; q.updatedAt=t; return q;}
-function touchChoiceImportant(q,i){const t=_ssNow(); if(q&&q.choices2&&q.choices2[i]){q.choices2[i].importantUpdatedAt=t;q.choices2[i].choiceImportantUpdatedAt=t;q.choices2[i].updatedAt=t;q.updatedAt=t;} return q;}
-function touchChoiceRecord(q,i){const t=_ssNow(); if(q&&q.choices2&&q.choices2[i]){q.choices2[i].recordUpdatedAt=t;q.choices2[i].choiceRecordUpdatedAt=t;q.choices2[i].updatedAt=t;q.updatedAt=t;} return q;}
-function mergeChoiceStatusSync(l,r){
- const a=normalizeConflictSafe({choices2:[l||{}]}).choices2[0]||{};
- const b=normalizeConflictSafe({choices2:[r||{}]}).choices2[0]||{};
- const ds=_ssPick(a,b,'choiceDataUpdatedAt'), is=_ssPick(a,b,'choiceImportantUpdatedAt'), rs=_ssPick(a,b,'choiceRecordUpdatedAt');
- return {...a,...b,
-  label:ds.label||b.label||a.label||'', text:ds.text||b.text||a.text||'', exp:ds.exp||b.exp||a.exp||'',
-  importantChoice:is.importantChoice!==undefined?!!is.importantChoice:!!(a.importantChoice||b.importantChoice),
-  record:rs.record!==undefined?(rs.record||''):(b.record||a.record||''),
-  totalCount:Math.max(Number(a.totalCount||0),Number(b.totalCount||0)),
-  correctCount:Math.max(Number(a.correctCount||0),Number(b.correctCount||0)),
-  wrongCount:Math.max(Number(a.wrongCount||0),Number(b.wrongCount||0)),
-  lastAnswered:_ssStr(b.lastAnswered)>_ssStr(a.lastAnswered)?b.lastAnswered:a.lastAnswered,
-  updatedAt:_ssMax(a.updatedAt,b.updatedAt), dataUpdatedAt:_ssMax(a.dataUpdatedAt,b.dataUpdatedAt), choiceDataUpdatedAt:_ssMax(a.choiceDataUpdatedAt,b.choiceDataUpdatedAt),
-  importantUpdatedAt:_ssMax(a.importantUpdatedAt,b.importantUpdatedAt), choiceImportantUpdatedAt:_ssMax(a.choiceImportantUpdatedAt,b.choiceImportantUpdatedAt),
-  recordUpdatedAt:_ssMax(a.recordUpdatedAt,b.recordUpdatedAt), choiceRecordUpdatedAt:_ssMax(a.choiceRecordUpdatedAt,b.choiceRecordUpdatedAt)
+function __newer(a,b,key){
+ const av=String((a&&a[key])||"");
+ const bv=String((b&&b[key])||"");
+ if(!av && bv) return b||{};
+ if(av && !bv) return a||{};
+ return bv>av ? (b||{}) : (a||{});
+}
+
+function normalizeChoiceCanonical(c,i){
+ const t=__nowIso();
+ c=c||{};
+ const out={
+  ...c,
+  label:__s(c.label || String(i+1)),
+  text:__s(c.text),
+  exp:__s(c.exp),
+  expl:__s(c.expl),
+  explanation:__s(c.explanation),
+  record:__s(c.record),
+  importantChoice:__b(c.importantChoice),
+  totalCount:__n(c.totalCount),
+  correctCount:__n(c.correctCount),
+  wrongCount:__n(c.wrongCount),
+  lastAnswered:__s(c.lastAnswered),
+  updatedAt:__s(c.updatedAt || t),
+  dataUpdatedAt:__s(c.dataUpdatedAt || c.updatedAt || t),
+  choiceDataUpdatedAt:__s(c.choiceDataUpdatedAt || c.dataUpdatedAt || c.updatedAt || t),
+  importantUpdatedAt:__s(c.importantUpdatedAt || c.updatedAt || t),
+  choiceImportantUpdatedAt:__s(c.choiceImportantUpdatedAt || c.importantUpdatedAt || c.updatedAt || t),
+  recordUpdatedAt:__s(c.recordUpdatedAt || c.updatedAt || t),
+  choiceRecordUpdatedAt:__s(c.choiceRecordUpdatedAt || c.recordUpdatedAt || c.updatedAt || t)
+ };
+ return out;
+}
+
+function normalizeQuestionCanonical(q){
+ const t=__nowIso();
+ q=q||{};
+ const choices=(q.choices2||[]).map((c,i)=>normalizeChoiceCanonical(c,i)).filter(c=>c.text || c.label);
+ return {
+  ...q,
+  id:q.id || (typeof uid==="function" ? uid() : ("q_"+Date.now()+"_"+Math.random().toString(36).slice(2))),
+  subjectBucket:__s(q.subjectBucket),
+  problemFormat:__s(q.problemFormat || q.format),
+  year:__s(q.year),
+  exam:__s(q.exam),
+  questionNo:__s(q.questionNo),
+  subject:__s(q.subject),
+  unitLarge:__s(q.unitLarge),
+  unitMiddle:__s(q.unitMiddle),
+  unitSmall:__s(q.unitSmall),
+  title:__s(q.title),
+  q:__s(q.q),
+  exp:__s(q.exp),
+  choices2:choices,
+  answerLabels:(q.answerLabels||[]).map(String),
+  important:__b(q.important),
+  record:__s(q.record),
+  wrong:__b(q.wrong),
+  totalCount:__n(q.totalCount),
+  correctCount:__n(q.correctCount),
+  wrongCount:__n(q.wrongCount),
+  lastAnswered:__s(q.lastAnswered),
+  updatedAt:__s(q.updatedAt || t),
+  dataUpdatedAt:__s(q.dataUpdatedAt || q.updatedAt || t),
+  importantUpdatedAt:__s(q.importantUpdatedAt || q.updatedAt || t),
+  recordUpdatedAt:__s(q.recordUpdatedAt || q.updatedAt || t)
  };
 }
-function mergeQuestion(qLocal,qRemote){
- const a=normalizeConflictSafe(qLocal||{}), b=normalizeConflictSafe(qRemote||{});
- const ds=_ssPick(a,b,'dataUpdatedAt'), is=_ssPick(a,b,'importantUpdatedAt'), rs=_ssPick(a,b,'recordUpdatedAt');
- const m={...a,...b,id:a.id||b.id||uid(),
-  subjectBucket:ds.subjectBucket||'',problemFormat:ds.problemFormat||'',year:ds.year||'',exam:ds.exam||'',questionNo:ds.questionNo||'',subject:ds.subject||'',unitLarge:ds.unitLarge||'',unitMiddle:ds.unitMiddle||'',unitSmall:ds.unitSmall||'',title:ds.title||'',q:ds.q||'',answerLabels:(ds.answerLabels&&ds.answerLabels.length)?ds.answerLabels:((b.answerLabels&&b.answerLabels.length)?b.answerLabels:(a.answerLabels||[])),exp:ds.exp||'',
-  important:is.important!==undefined?!!is.important:!!(a.important||b.important), record:rs.record!==undefined?(rs.record||''):(b.record||a.record||''), wrong:!!(a.wrong||b.wrong),
-  totalCount:Math.max(Number(a.totalCount||0),Number(b.totalCount||0)), correctCount:Math.max(Number(a.correctCount||0),Number(b.correctCount||0)), wrongCount:Math.max(Number(a.wrongCount||0),Number(b.wrongCount||0)), lastAnswered:_ssStr(b.lastAnswered)>_ssStr(a.lastAnswered)?b.lastAnswered:a.lastAnswered,
-  updatedAt:_ssMax(a.updatedAt,b.updatedAt), dataUpdatedAt:_ssMax(a.dataUpdatedAt,b.dataUpdatedAt), importantUpdatedAt:_ssMax(a.importantUpdatedAt,b.importantUpdatedAt), recordUpdatedAt:_ssMax(a.recordUpdatedAt,b.recordUpdatedAt)
- };
- const labs=[...new Set([...(a.choices2||[]).map(c=>String(c.label||'')),...(b.choices2||[]).map(c=>String(c.label||''))].filter(Boolean))];
- m.choices2=labs.map(lab=>mergeChoiceStatusSync(_choiceByLabel(a.choices2,lab),_choiceByLabel(b.choices2,lab)));
- return normalizeConflictSafe(m);
+
+// 既存のnormalizeを上書きし、ステータス・更新日時を絶対に落とさない
+function normalize(q){ return normalizeQuestionCanonical(q); }
+function ensureConflictSafeStamps(q){ return normalizeQuestionCanonical(q); }
+function normalizeConflictSafe(q){ return normalizeQuestionCanonical(q); }
+function normalizeStatusSync(q){ return normalizeQuestionCanonical(q); }
+function normalizeForStatusSync(q){ return normalizeQuestionCanonical(q); }
+
+function touchProblemData(q){ const t=__nowIso(); q.updatedAt=t; q.dataUpdatedAt=t; return q; }
+function touchProblemImportant(q){ const t=__nowIso(); q.updatedAt=t; q.importantUpdatedAt=t; return q; }
+function touchProblemRecord(q){ const t=__nowIso(); q.updatedAt=t; q.recordUpdatedAt=t; return q; }
+function touchChoiceData(q,i){
+ const t=__nowIso();
+ if(q&&q.choices2&&q.choices2[i]){
+  q.choices2[i].updatedAt=t; q.choices2[i].dataUpdatedAt=t; q.choices2[i].choiceDataUpdatedAt=t;
+  q.updatedAt=t; q.dataUpdatedAt=t;
+ }
+ return q;
 }
+function touchChoiceImportant(q,i){
+ const t=__nowIso();
+ if(q&&q.choices2&&q.choices2[i]){
+  q.choices2[i].updatedAt=t; q.choices2[i].importantUpdatedAt=t; q.choices2[i].choiceImportantUpdatedAt=t;
+  q.updatedAt=t;
+ }
+ return q;
+}
+function touchChoiceRecord(q,i){
+ const t=__nowIso();
+ if(q&&q.choices2&&q.choices2[i]){
+  q.choices2[i].updatedAt=t; q.choices2[i].recordUpdatedAt=t; q.choices2[i].choiceRecordUpdatedAt=t;
+  q.updatedAt=t; q.recordUpdatedAt=t;
+ }
+ return q;
+}
+
+function mergeChoice(l,r){
+ const a=normalizeChoiceCanonical(l||{},0);
+ const b=normalizeChoiceCanonical(r||{},0);
+ const data=__newer(a,b,"choiceDataUpdatedAt");
+ const imp=__newer(a,b,"choiceImportantUpdatedAt");
+ const rec=__newer(a,b,"choiceRecordUpdatedAt");
+ return normalizeChoiceCanonical({
+  ...a,...b,
+  label:data.label||b.label||a.label||"",
+  text:data.text||b.text||a.text||"",
+  exp:data.exp||b.exp||a.exp||"",
+  expl:data.expl||b.expl||a.expl||"",
+  explanation:data.explanation||b.explanation||a.explanation||"",
+  importantChoice: imp.importantChoice !== undefined ? !!imp.importantChoice : !!(a.importantChoice||b.importantChoice),
+  record: rec.record !== undefined ? (rec.record||"") : (b.record||a.record||""),
+  totalCount:Math.max(__n(a.totalCount),__n(b.totalCount)),
+  correctCount:Math.max(__n(a.correctCount),__n(b.correctCount)),
+  wrongCount:Math.max(__n(a.wrongCount),__n(b.wrongCount)),
+  lastAnswered:__s(b.lastAnswered)>__s(a.lastAnswered)?b.lastAnswered:a.lastAnswered,
+  updatedAt:__latest(a.updatedAt,b.updatedAt),
+  dataUpdatedAt:__latest(a.dataUpdatedAt,b.dataUpdatedAt),
+  choiceDataUpdatedAt:__latest(a.choiceDataUpdatedAt,b.choiceDataUpdatedAt),
+  importantUpdatedAt:__latest(a.importantUpdatedAt,b.importantUpdatedAt),
+  choiceImportantUpdatedAt:__latest(a.choiceImportantUpdatedAt,b.choiceImportantUpdatedAt),
+  recordUpdatedAt:__latest(a.recordUpdatedAt,b.recordUpdatedAt),
+  choiceRecordUpdatedAt:__latest(a.choiceRecordUpdatedAt,b.choiceRecordUpdatedAt)
+ },0);
+}
+
+function mergeQuestion(l,r){
+ const a=normalizeQuestionCanonical(l||{});
+ const b=normalizeQuestionCanonical(r||{});
+ const data=__newer(a,b,"dataUpdatedAt");
+ const imp=__newer(a,b,"importantUpdatedAt");
+ const rec=__newer(a,b,"recordUpdatedAt");
+ const m={
+  ...a,...b,
+  id:a.id||b.id,
+  subjectBucket:data.subjectBucket||"",
+  problemFormat:data.problemFormat||"",
+  year:data.year||"",
+  exam:data.exam||"",
+  questionNo:data.questionNo||"",
+  subject:data.subject||"",
+  unitLarge:data.unitLarge||"",
+  unitMiddle:data.unitMiddle||"",
+  unitSmall:data.unitSmall||"",
+  title:data.title||"",
+  q:data.q||"",
+  exp:data.exp||"",
+  answerLabels:(data.answerLabels&&data.answerLabels.length)?data.answerLabels:((b.answerLabels&&b.answerLabels.length)?b.answerLabels:(a.answerLabels||[])),
+  important: imp.important !== undefined ? !!imp.important : !!(a.important||b.important),
+  record: rec.record !== undefined ? (rec.record||"") : (b.record||a.record||""),
+  wrong:!!(a.wrong||b.wrong),
+  totalCount:Math.max(__n(a.totalCount),__n(b.totalCount)),
+  correctCount:Math.max(__n(a.correctCount),__n(b.correctCount)),
+  wrongCount:Math.max(__n(a.wrongCount),__n(b.wrongCount)),
+  lastAnswered:__s(b.lastAnswered)>__s(a.lastAnswered)?b.lastAnswered:a.lastAnswered,
+  updatedAt:__latest(a.updatedAt,b.updatedAt),
+  dataUpdatedAt:__latest(a.dataUpdatedAt,b.dataUpdatedAt),
+  importantUpdatedAt:__latest(a.importantUpdatedAt,b.importantUpdatedAt),
+  recordUpdatedAt:__latest(a.recordUpdatedAt,b.recordUpdatedAt)
+ };
+ const lc=a.choices2||[], rc=b.choices2||[];
+ const labs=[...new Set([...lc.map(c=>__s(c.label)),...rc.map(c=>__s(c.label))].filter(Boolean))];
+ m.choices2=labs.map(label=>mergeChoice(lc.find(c=>__s(c.label)===label), rc.find(c=>__s(c.label)===label)));
+ if(!m.choices2.length) m.choices2=(rc.length?rc:lc).map((c,i)=>mergeChoice(c,null));
+ return normalizeQuestionCanonical(m);
+}
+
 function mergeQuestionArrays(localArr,remoteArr){
  const map=new Map();
- (remoteArr||[]).map(normalizeConflictSafe).forEach(q=>map.set(getQuestionMergeKey(q),q));
- (localArr||[]).map(normalizeConflictSafe).forEach(q=>{const k=getQuestionMergeKey(q); map.set(k,map.has(k)?mergeQuestion(q,map.get(k)):q);});
- return Array.from(map.values()).map(normalizeConflictSafe);
+ (localArr||[]).map(normalizeQuestionCanonical).forEach(q=>map.set(getQuestionMergeKey(q),q));
+ (remoteArr||[]).map(normalizeQuestionCanonical).forEach(r=>{
+  const k=getQuestionMergeKey(r);
+  map.set(k,map.has(k)?mergeQuestion(map.get(k),r):r);
+ });
+ return Array.from(map.values()).map(normalizeQuestionCanonical);
 }
-function makeSyncPayload(){return {app:'5taku-study',version:9,exportedAt:new Date().toISOString(),questions:questions.map(normalizeConflictSafe)};}
-// ==== 問肢ステータス同期・タイムスタンプ保持FIXここまで ====
+
+function makeSyncPayload(){
+ return {
+  app:"5taku-study",
+  schemaVersion:10,
+  exportedAt:new Date().toISOString(),
+  questions:(questions||[]).map(normalizeQuestionCanonical)
+ };
+}
+
+function selectedExportBucketsCanonical(){
+ const sel=document.getElementById("exportBuckets");
+ if(!sel)return [];
+ return Array.from(sel.selectedOptions).map(o=>o.value).filter(Boolean);
+}
+
+function exportCSV(){
+ const buckets=typeof selectedExportBuckets==="function" ? selectedExportBuckets() : selectedExportBucketsCanonical();
+ const target=(questions||[]).map(normalizeQuestionCanonical).filter(q=>!buckets.length || buckets.includes(q.subjectBucket));
+ const maxChoices=Math.max(6,...target.map(q=>(q.choices2||[]).length));
+ const header=["科目区分","問題形式","出題年度","試験名","問","科目","大分類","中分類","小分類","重要","タイトル","本文","正解ラベル","全体解説","問題記録","問題総解答回数","問題正答回数","問題誤答回数","問題最終解答日","復習対象","問題データ更新日時","問題重要更新日時","問題記録更新日時","問題最終更新日時"];
+ for(let i=1;i<=maxChoices;i++){
+  header.push(`選択肢ラベル${i}`,`選択肢${i}`,`選択肢${i}解説`,`選択肢${i}記録`,`選択肢${i}重要肢`,`選択肢${i}総解答回数`,`選択肢${i}正答回数`,`選択肢${i}誤答回数`,`選択肢${i}最終解答日`,`選択肢${i}データ更新日時`,`選択肢${i}重要更新日時`,`選択肢${i}記録更新日時`,`選択肢${i}最終更新日時`);
+ }
+ const rows=target.map(q=>{
+  const row=[
+   q.subjectBucket,q.problemFormat,q.year,q.exam,q.questionNo,q.subject,q.unitLarge,q.unitMiddle,q.unitSmall,
+   q.important?"○":"",q.title,q.q,(q.answerLabels||[]).join(","),q.exp,q.record,
+   q.totalCount,q.correctCount,q.wrongCount,q.lastAnswered,q.wrong?"1":"",
+   q.dataUpdatedAt,q.importantUpdatedAt,q.recordUpdatedAt,q.updatedAt
+  ];
+  for(let i=0;i<maxChoices;i++){
+   const c=(q.choices2||[])[i]||{};
+   row.push(
+    c.label||"",c.text||"",c.exp||"",c.record||"",c.importantChoice?"1":"",
+    c.totalCount||0,c.correctCount||0,c.wrongCount||0,c.lastAnswered||"",
+    c.choiceDataUpdatedAt||c.dataUpdatedAt||"",
+    c.choiceImportantUpdatedAt||c.importantUpdatedAt||"",
+    c.choiceRecordUpdatedAt||c.recordUpdatedAt||"",
+    c.updatedAt||""
+   );
+  }
+  return row;
+ });
+ const expected=header.length;
+ const csv=[header,...rows.map(r=>{
+  if(r.length<expected) return [...r,...Array(expected-r.length).fill("")];
+  if(r.length>expected) return r.slice(0,expected);
+  return r;
+ })].map(r=>r.map(v=>`"${String(v??"").replace(/"/g,'""')}"`).join(",")).join("\r\n");
+ const suffix=buckets.length?buckets.join("_"):"all";
+ const a=document.createElement("a");
+ a.href=URL.createObjectURL(new Blob(["\ufeff"+csv],{type:"text/csv;charset=utf-8"}));
+ a.download=`quiz_export_${suffix}.csv`;
+ a.click();
+ URL.revokeObjectURL(a.href);
+}
+
+// 分割同期も正規データ構造だけを書き出す
+function chunkArrayCanonical(arr,size){
+ const out=[];
+ for(let i=0;i<arr.length;i+=size) out.push(arr.slice(i,i+size));
+ return out;
+}
+function syncBasePathCanonical(cfg){
+ return String(cfg.path||"study-data.json").replace(/\.json$/,"");
+}
+function chunkPathCanonical(cfg,index){
+ return `${syncBasePathCanonical(cfg)}-part-${String(index).padStart(3,"0")}.json`;
+}
+async function uploadChunkedSyncPayload(cfg,payload){
+ const questions=((payload&&payload.questions)||[]).map(normalizeQuestionCanonical);
+ const chunks=chunkArrayCanonical(questions,75);
+ const parts=[];
+ for(let i=0;i<chunks.length;i++){
+  const path=chunkPathCanonical(cfg,i);
+  const existing=typeof githubApiGetFileByPath==="function" ? await githubApiGetFileByPath(cfg,path) : await githubApiGetFile({...cfg,path});
+  const partPayload={
+   app:"5taku-study",
+   type:"questions-part",
+   schemaVersion:10,
+   partIndex:i,
+   partCount:chunks.length,
+   exportedAt:(payload&&payload.exportedAt)||new Date().toISOString(),
+   questions:chunks[i]
+  };
+  if(typeof githubApiPutFileByPath==="function") await githubApiPutFileByPath(cfg,path,partPayload,existing?existing.sha:null);
+  else await githubApiPutFile({...cfg,path},partPayload,existing?existing.sha:null);
+  parts.push({path,count:chunks[i].length});
+ }
+ const metaExisting=await githubApiGetFile(cfg);
+ const meta={
+  app:"5taku-study",
+  type:"chunked-sync-meta",
+  schemaVersion:10,
+  chunked:true,
+  exportedAt:(payload&&payload.exportedAt)||new Date().toISOString(),
+  count:questions.length,
+  partCount:chunks.length,
+  parts
+ };
+ await githubApiPutFile(cfg,meta,metaExisting?metaExisting.sha:null);
+ return meta;
+}
+
+async function loadChunkedOrSingleRemoteQuestions(cfg){
+ const metaRead=typeof readJsonByPath==="function" ? await readJsonByPath(cfg,cfg.path) : await githubApiReadJsonFile(cfg);
+ if(!metaRead.file) return {file:null,questions:[]};
+ const meta=metaRead.json||{};
+ if(meta.chunked && Array.isArray(meta.parts)){
+  let all=[];
+  for(const p of meta.parts){
+   const pr=typeof readJsonByPath==="function" ? await readJsonByPath(cfg,p.path) : await githubApiReadJsonFile({...cfg,path:p.path});
+   all=all.concat((pr.json&&pr.json.questions)||[]);
+  }
+  return {file:metaRead.file,questions:all.map(normalizeQuestionCanonical)};
+ }
+ return {file:metaRead.file,questions:(meta.questions||[]).map(normalizeQuestionCanonical)};
+}
+async function loadRemoteQuestions(cfg){
+ return await loadChunkedOrSingleRemoteQuestions(cfg);
+}
+// ==== データ構造正規化FIXここまで ====
 
 </script>
 </body>

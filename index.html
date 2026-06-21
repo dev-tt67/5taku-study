@@ -2944,8 +2944,158 @@ window.APP_VERSION = "force-latest-normal-url-20260621-001";
   });
 })();
 // ==== 通常URL最新版強制表示FIXここまで ====
+
+
+// ==== GitHub409競合自動再試行FIX ====
+async function githubPutJsonWithRetry(cfg,path,obj,message,maxRetry=4){
+ const url=`https://api.github.com/repos/${encodeURIComponent(cfg.owner)}/${encodeURIComponent(cfg.repo)}/contents/${encodeURIComponent(path).replace(/%2F/g,"/")}`;
+ let lastErr=null;
+ for(let attempt=0; attempt<maxRetry; attempt++){
+  let current=null;
+  try{
+   current = typeof githubApiGetFileByPath==="function"
+    ? await githubApiGetFileByPath(cfg,path)
+    : await githubApiGetFile({...cfg,path});
+  }catch(e){ current=null; }
+
+  const body={
+   message: message || `Update ${path} ${new Date().toISOString()}`,
+   content:btoa(unescape(encodeURIComponent(JSON.stringify(obj,null,2))))
+  };
+  if(current && current.sha) body.sha=current.sha;
+
+  const res=await fetch(url,{
+   method:"PUT",
+   headers:{
+    "Accept":"application/vnd.github+json",
+    "Authorization":`Bearer ${cfg.token}`,
+    "X-GitHub-Api-Version":"2022-11-28"
+   },
+   body:JSON.stringify(body)
+  });
+
+  if(res.ok) return await res.json();
+
+  const text=await res.text().catch(()=>"");
+  lastErr=new Error(`GitHub保存エラー：${res.status} ${text}`);
+
+  if(res.status===409){
+   await new Promise(r=>setTimeout(r, 600 + attempt*900));
+   continue;
+  }
+  throw lastErr;
+ }
+ throw lastErr || new Error("GitHub保存に失敗しました。");
+}
+
+async function githubDeleteFileWithRetry(cfg,path,maxRetry=3){
+ const url=`https://api.github.com/repos/${encodeURIComponent(cfg.owner)}/${encodeURIComponent(cfg.repo)}/contents/${encodeURIComponent(path).replace(/%2F/g,"/")}`;
+ for(let attempt=0; attempt<maxRetry; attempt++){
+  try{
+   const file = typeof githubApiGetFileByPath==="function"
+    ? await githubApiGetFileByPath(cfg,path)
+    : await githubApiGetFile({...cfg,path});
+   if(!file || !file.sha) return;
+   const res=await fetch(url,{
+    method:"DELETE",
+    headers:{
+     "Accept":"application/vnd.github+json",
+     "Authorization":`Bearer ${cfg.token}`,
+     "X-GitHub-Api-Version":"2022-11-28"
+    },
+    body:JSON.stringify({message:`Delete obsolete sync part ${path}`, sha:file.sha})
+   });
+   if(res.ok || res.status===404) return;
+   if(res.status===409){
+    await new Promise(r=>setTimeout(r,600+attempt*900));
+    continue;
+   }
+   return;
+  }catch(e){
+   await new Promise(r=>setTimeout(r,600+attempt*900));
+  }
+ }
+}
+
+function shaRetryNow(){return new Date().toISOString();}
+function shaRetryBasePath(cfg){return String(cfg.path||"study-data.json").replace(/\.json$/,"");}
+function shaRetryPartPath(cfg,index){return `${shaRetryBasePath(cfg)}-part-${String(index).padStart(3,"0")}.json`;}
+function shaRetryNormalize(q){
+ if(typeof normalizeQuestionCanonical==="function") return normalizeQuestionCanonical(q);
+ if(typeof normalizeConflictSafe==="function") return normalizeConflictSafe(q);
+ if(typeof normalize==="function") return normalize(q);
+ return q;
+}
+
+async function cleanupObsoletePartsShaRetry(cfg,keepCount){
+ for(let i=keepCount;i<100;i++){
+  await githubDeleteFileWithRetry(cfg,shaRetryPartPath(cfg,i));
+ }
+}
+
+async function uploadChunkedSyncPayload(cfg,payload){
+ const qs=((payload&&payload.questions)||questions||[]).map(shaRetryNormalize);
+ const chunkSize=75;
+ const chunks=[];
+ for(let i=0;i<qs.length;i+=chunkSize) chunks.push(qs.slice(i,i+chunkSize));
+ const exportedAt=shaRetryNow();
+ const parts=[];
+
+ for(let i=0;i<chunks.length;i++){
+  const path=shaRetryPartPath(cfg,i);
+  const partPayload={
+   app:"5taku-study",
+   type:"questions-part",
+   schemaVersion:13,
+   syncMode:"overwrite",
+   exportedAt,
+   partIndex:i,
+   partCount:chunks.length,
+   count:chunks[i].length,
+   questions:chunks[i]
+  };
+  await githubPutJsonWithRetry(cfg,path,partPayload,`Update study data part ${i} ${exportedAt}`);
+  parts.push({path,count:chunks[i].length});
+ }
+
+ await cleanupObsoletePartsShaRetry(cfg,chunks.length);
+
+ const meta={
+  app:"5taku-study",
+  type:"chunked-sync-meta",
+  schemaVersion:13,
+  syncMode:"overwrite",
+  chunked:true,
+  exportedAt,
+  count:qs.length,
+  partCount:chunks.length,
+  parts
+ };
+ await githubPutJsonWithRetry(cfg,cfg.path||"study-data.json",meta,`Update study data meta ${exportedAt}`);
+ return meta;
+}
+
+async function uploadSyncData(){
+ const cfg=getSyncConfig();
+ if(!cfg.owner||!cfg.repo||!cfg.path||!cfg.token){alert("同期設定を入力してください。");return;}
+ try{
+  const local=(questions||[]).map(shaRetryNormalize);
+  if(typeof setSyncStatus==="function") setSyncStatus(`完全上書きアップロード中：${local.length}問`);
+  await uploadChunkedSyncPayload(cfg,{questions:local,syncMode:"overwrite"});
+  if(typeof safeAddSyncHistory==="function") safeAddSyncHistory("完全上書きアップロード後バックアップ",{questions:local});
+  if(typeof setSyncStatus==="function") setSyncStatus(`完全上書きアップロード完了：${local.length}問を保存しました。`);
+  alert(`完全上書きアップロード完了：${local.length}問を保存しました。`);
+ }catch(e){
+  console.error(e);
+  if(typeof setSyncStatus==="function") setSyncStatus(e.message||String(e));
+  alert(e.message||String(e));
+ }
+}
+window.uploadSyncData=uploadSyncData;
+// ==== GitHub409競合自動再試行FIXここまで ====
+
 </script>
 <div style="display:none">VERSION_MARKER_FORCE_LATEST_NORMAL_URL force-latest-normal-url-20260621-001 通常URL最新版強制表示FIX 同期完全上書き固定FIX</div>
 
-</body>
+<div style='display:none'>VERSION_MARKER_GITHUB_SHA_RETRY_FIX GitHub409競合自動再試行FIX</div></body>
 </html>

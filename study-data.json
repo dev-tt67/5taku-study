@@ -1,9 +1,10 @@
 {
   "app": "5taku-study",
   "type": "chunked-sync-meta",
-  "schemaVersion": 10,
+  "schemaVersion": 11,
+  "syncMode": "merge",
   "chunked": true,
-  "exportedAt": "2026-06-20T12:50:48.245Z",
+  "exportedAt": "2026-06-21T01:28:04.272Z",
   "count": 918,
   "partCount": 13,
   "parts": [

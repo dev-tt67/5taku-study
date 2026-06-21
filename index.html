@@ -379,6 +379,7 @@ select[multiple] option{padding:7px}
 }
 
 </style>
+<meta name="app-version" content="force-latest-normal-url-20260621-001">
 </head>
 <body>
 <header>5択問題アプリ</header>
@@ -589,7 +590,7 @@ select[multiple] option{padding:7px}
 </section>
 
 <section id="syncSec" class="card hidden">
-<h2>GitHub同期 <span class='small'>同期上書きクリーンFIX</span> <span class='small'>通常URL最新版表示FIX</span> <span class='small'>CSV同期データ構造FIX</span> <span class='small'>問単位・肢単位ステータス分離FIX</span> <span class='small'>分割同期版・同期関数完全修正版・同期関数完全修正版・履歴関数修正版</span></h2>
+<h2>GitHub同期 <span class='small' style='font-weight:700;color:#0b5f8a'>通常URL最新版強制表示FIX</span> <span class='small'>同期上書きクリーンFIX</span> <span class='small'>通常URL最新版表示FIX</span> <span class='small'>CSV同期データ構造FIX</span> <span class='small'>問単位・肢単位ステータス分離FIX</span> <span class='small'>分割同期版・同期関数完全修正版・同期関数完全修正版・履歴関数修正版</span></h2>
 <p class="small">
 PCとスマホの学習記録を、GitHubリポジトリ内の分割同期ファイルに保存して共有します。<br>
 GitHubの Personal Access Token（Contents の Read/Write 権限）を作成して入力してください。
@@ -2893,5 +2894,58 @@ window.addEventListener("load",()=>{
 // ==== 同期完全上書き固定FIXここまで ====
 
 </script>
+
+<script>
+// ==== 通常URL最新版強制表示FIX ====
+window.APP_VERSION = "force-latest-normal-url-20260621-001";
+(function(){
+  const KEY = "5taku_app_version_seen";
+  const current = "force-latest-normal-url-20260621-001";
+
+  async function refreshServiceWorker(){
+    if (!("serviceWorker" in navigator)) return;
+    try {
+      const regs = await navigator.serviceWorker.getRegistrations();
+      for (const reg of regs) {
+        try { await reg.update(); } catch(e) {}
+      }
+    } catch(e) {}
+  }
+
+  async function forceFreshOnVersionMismatch(){
+    try {
+      const prev = localStorage.getItem(KEY);
+      localStorage.setItem(KEY, current);
+      if (prev && prev !== current && !location.search.includes("updated="+current)) {
+        if ("caches" in window) {
+          const keys = await caches.keys();
+          await Promise.all(keys.map(k => caches.delete(k)));
+        }
+        location.replace(location.pathname + "?updated=" + encodeURIComponent(current));
+      }
+    } catch(e) {}
+  }
+
+  window.addEventListener("load", function(){
+    refreshServiceWorker();
+    forceFreshOnVersionMismatch();
+    const text = "通常URL最新版強制表示FIX";
+    const els = Array.from(document.querySelectorAll("h1,h2,h3,div,span"));
+    const syncHead = els.find(el => (el.textContent||"").includes("GitHub同期"));
+    if(syncHead && !(syncHead.textContent||"").includes(text)){
+      const s=document.createElement("span");
+      s.className="small";
+      s.style.fontWeight="700";
+      s.style.color="#0b5f8a";
+      s.style.marginLeft="12px";
+      s.textContent=text;
+      syncHead.appendChild(s);
+    }
+  });
+})();
+// ==== 通常URL最新版強制表示FIXここまで ====
+</script>
+<div style="display:none">VERSION_MARKER_FORCE_LATEST_NORMAL_URL force-latest-normal-url-20260621-001 通常URL最新版強制表示FIX 同期完全上書き固定FIX</div>
+
 </body>
 </html>

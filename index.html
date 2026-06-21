@@ -3097,5 +3097,29 @@ window.uploadSyncData=uploadSyncData;
 </script>
 <div style="display:none">VERSION_MARKER_FORCE_LATEST_NORMAL_URL force-latest-normal-url-20260621-001 通常URL最新版強制表示FIX 同期完全上書き固定FIX</div>
 
-<div style='display:none'>VERSION_MARKER_GITHUB_SHA_RETRY_FIX GitHub409競合自動再試行FIX</div></body>
+<div style='display:none'>VERSION_MARKER_GITHUB_SHA_RETRY_FIX GitHub409競合自動再試行FIX</div>
+<script>
+// ==== 同期タブ表示ラベル追加FIX ====
+window.addEventListener("load", function(){
+  const labels = ["GitHub409競合自動再試行FIX", "通常URL最新版強制表示FIX"];
+  const els = Array.from(document.querySelectorAll("h1,h2,h3,div,span"));
+  const syncHead = els.find(el => (el.textContent||"").includes("GitHub同期"));
+  if(!syncHead) return;
+  for(const text of labels){
+    if(!(syncHead.textContent||"").includes(text)){
+      const s=document.createElement("span");
+      s.className="small";
+      s.style.fontWeight="700";
+      s.style.color="#0b5f8a";
+      s.style.marginLeft="12px";
+      s.textContent=text;
+      syncHead.appendChild(s);
+    }
+  }
+});
+// ==== 同期タブ表示ラベル追加FIXここまで ====
+</script>
+<div style="display:none">VERSION_MARKER_SHA409_LABEL_FIX GitHub409競合自動再試行FIX 同期タブ表示ラベル追加FIX</div>
+
+</body>
 </html>

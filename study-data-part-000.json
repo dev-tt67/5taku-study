@@ -1,9 +1,9 @@
 {
   "app": "5taku-study",
   "type": "questions-part",
-  "schemaVersion": 12,
+  "schemaVersion": 13,
   "syncMode": "overwrite",
-  "exportedAt": "2026-06-21T04:26:44.444Z",
+  "exportedAt": "2026-06-21T10:45:58.299Z",
   "partIndex": 0,
   "partCount": 4,
   "count": 75,

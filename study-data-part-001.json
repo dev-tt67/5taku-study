@@ -1,9 +1,9 @@
 {
   "app": "5taku-study",
   "type": "questions-part",
-  "schemaVersion": 12,
+  "schemaVersion": 13,
   "syncMode": "overwrite",
-  "exportedAt": "2026-06-21T04:26:47.691Z",
+  "exportedAt": "2026-06-21T10:45:58.299Z",
   "partIndex": 1,
   "partCount": 4,
   "count": 75,
@@ -4942,16 +4942,16 @@
     {
       "id": "mqn8p4vjyhehxvl6b2j",
       "subjectBucket": "民法（総則・物権）",
+      "problemFormat": "択一",
       "year": "R1",
-      "exam": "予備試験",
+      "exam": "予備独自問題",
       "questionNo": "3",
       "subject": "民法",
       "unitLarge": "物権",
       "unitMiddle": "物権法総論",
       "unitSmall": "序論",
       "important": false,
-      "problemFormat": "択一",
-      "title": "R1予備試験問3",
+      "title": "R1予備独自問題問3",
       "q": "物権に関する次のアからオまでの各記述のうち、判例の趣旨に照らし誤っているものを組み合わせたものは、後記1から5までのうちどれか。",
       "choices2": [
         {
@@ -4966,13 +4966,13 @@
           "expl": "",
           "explanation": "",
           "importantChoice": false,
-          "updatedAt": "2026-06-21T03:41:22.543Z",
-          "dataUpdatedAt": "2026-06-21T03:41:22.543Z",
-          "choiceDataUpdatedAt": "2026-06-21T03:41:22.543Z",
-          "importantUpdatedAt": "2026-06-21T03:41:22.543Z",
-          "choiceImportantUpdatedAt": "2026-06-21T03:41:22.543Z",
-          "recordUpdatedAt": "2026-06-21T03:41:22.543Z",
-          "choiceRecordUpdatedAt": "2026-06-21T03:41:22.543Z"
+          "updatedAt": "2026-06-21T05:01:52.347Z",
+          "dataUpdatedAt": "2026-06-21T05:01:52.347Z",
+          "choiceDataUpdatedAt": "2026-06-21T05:01:52.347Z",
+          "importantUpdatedAt": "2026-06-21T05:01:52.347Z",
+          "choiceImportantUpdatedAt": "2026-06-21T05:01:52.347Z",
+          "recordUpdatedAt": "2026-06-21T05:01:52.347Z",
+          "choiceRecordUpdatedAt": "2026-06-21T05:01:52.347Z"
         },
         {
           "label": "イ",
@@ -4986,13 +4986,13 @@
           "expl": "",
           "explanation": "",
           "importantChoice": false,
-          "updatedAt": "2026-06-21T03:41:22.543Z",
-          "dataUpdatedAt": "2026-06-21T03:41:22.543Z",
-          "choiceDataUpdatedAt": "2026-06-21T03:41:22.543Z",
-          "importantUpdatedAt": "2026-06-21T03:41:22.543Z",
-          "choiceImportantUpdatedAt": "2026-06-21T03:41:22.543Z",
-          "recordUpdatedAt": "2026-06-21T03:41:22.543Z",
-          "choiceRecordUpdatedAt": "2026-06-21T03:41:22.543Z"
+          "updatedAt": "2026-06-21T05:01:52.348Z",
+          "dataUpdatedAt": "2026-06-21T05:01:52.348Z",
+          "choiceDataUpdatedAt": "2026-06-21T05:01:52.348Z",
+          "importantUpdatedAt": "2026-06-21T05:01:52.348Z",
+          "choiceImportantUpdatedAt": "2026-06-21T05:01:52.348Z",
+          "recordUpdatedAt": "2026-06-21T05:01:52.348Z",
+          "choiceRecordUpdatedAt": "2026-06-21T05:01:52.348Z"
         },
         {
           "label": "ウ",
@@ -5006,13 +5006,13 @@
           "expl": "",
           "explanation": "",
           "importantChoice": false,
-          "updatedAt": "2026-06-21T03:41:22.543Z",
-          "dataUpdatedAt": "2026-06-21T03:41:22.543Z",
-          "choiceDataUpdatedAt": "2026-06-21T03:41:22.543Z",
-          "importantUpdatedAt": "2026-06-21T03:41:22.543Z",
-          "choiceImportantUpdatedAt": "2026-06-21T03:41:22.543Z",
-          "recordUpdatedAt": "2026-06-21T03:41:22.543Z",
-          "choiceRecordUpdatedAt": "2026-06-21T03:41:22.543Z"
+          "updatedAt": "2026-06-21T05:01:52.348Z",
+          "dataUpdatedAt": "2026-06-21T05:01:52.348Z",
+          "choiceDataUpdatedAt": "2026-06-21T05:01:52.348Z",
+          "importantUpdatedAt": "2026-06-21T05:01:52.348Z",
+          "choiceImportantUpdatedAt": "2026-06-21T05:01:52.348Z",
+          "recordUpdatedAt": "2026-06-21T05:01:52.348Z",
+          "choiceRecordUpdatedAt": "2026-06-21T05:01:52.348Z"
         },
         {
           "label": "エ",
@@ -5026,13 +5026,13 @@
           "expl": "",
           "explanation": "",
           "importantChoice": false,
-          "updatedAt": "2026-06-21T03:41:22.543Z",
-          "dataUpdatedAt": "2026-06-21T03:41:22.543Z",
-          "choiceDataUpdatedAt": "2026-06-21T03:41:22.543Z",
-          "importantUpdatedAt": "2026-06-21T03:41:22.543Z",
-          "choiceImportantUpdatedAt": "2026-06-21T03:41:22.543Z",
-          "recordUpdatedAt": "2026-06-21T03:41:22.543Z",
-          "choiceRecordUpdatedAt": "2026-06-21T03:41:22.543Z"
+          "updatedAt": "2026-06-21T05:01:52.348Z",
+          "dataUpdatedAt": "2026-06-21T05:01:52.348Z",
+          "choiceDataUpdatedAt": "2026-06-21T05:01:52.348Z",
+          "importantUpdatedAt": "2026-06-21T05:01:52.348Z",
+          "choiceImportantUpdatedAt": "2026-06-21T05:01:52.348Z",
+          "recordUpdatedAt": "2026-06-21T05:01:52.348Z",
+          "choiceRecordUpdatedAt": "2026-06-21T05:01:52.348Z"
         },
         {
           "label": "オ",
@@ -5046,13 +5046,13 @@
           "expl": "",
           "explanation": "",
           "importantChoice": false,
-          "updatedAt": "2026-06-21T03:41:22.543Z",
-          "dataUpdatedAt": "2026-06-21T03:41:22.543Z",
-          "choiceDataUpdatedAt": "2026-06-21T03:41:22.543Z",
-          "importantUpdatedAt": "2026-06-21T03:41:22.543Z",
-          "choiceImportantUpdatedAt": "2026-06-21T03:41:22.543Z",
-          "recordUpdatedAt": "2026-06-21T03:41:22.543Z",
-          "choiceRecordUpdatedAt": "2026-06-21T03:41:22.543Z"
+          "updatedAt": "2026-06-21T05:01:52.348Z",
+          "dataUpdatedAt": "2026-06-21T05:01:52.348Z",
+          "choiceDataUpdatedAt": "2026-06-21T05:01:52.348Z",
+          "importantUpdatedAt": "2026-06-21T05:01:52.348Z",
+          "choiceImportantUpdatedAt": "2026-06-21T05:01:52.348Z",
+          "recordUpdatedAt": "2026-06-21T05:01:52.348Z",
+          "choiceRecordUpdatedAt": "2026-06-21T05:01:52.348Z"
         }
       ],
       "answerLabels": [
@@ -5066,10 +5066,10 @@
       "correctCount": 0,
       "wrongCount": 0,
       "lastAnswered": "",
-      "updatedAt": "2026-06-21T03:41:22.543Z",
-      "dataUpdatedAt": "2026-06-21T03:41:22.543Z",
-      "importantUpdatedAt": "2026-06-21T03:41:22.543Z",
-      "recordUpdatedAt": "2026-06-21T03:41:22.543Z"
+      "updatedAt": "2026-06-21T05:01:52.347Z",
+      "dataUpdatedAt": "2026-06-21T05:01:52.347Z",
+      "importantUpdatedAt": "2026-06-21T05:01:52.347Z",
+      "recordUpdatedAt": "2026-06-21T05:01:52.347Z"
     },
     {
       "id": "mqn8p4vkd2rgzb2thw",
@@ -8061,16 +8061,16 @@
     {
       "id": "mqn8p4vw01y22vevkps",
       "subjectBucket": "民法（総則・物権）",
+      "problemFormat": "択一",
       "year": "H26",
-      "exam": "予備試験",
+      "exam": "予備独自問題",
       "questionNo": "4",
       "subject": "民法",
       "unitLarge": "物権",
       "unitMiddle": "物権法総論",
       "unitSmall": "不動産物権変動",
       "important": false,
-      "problemFormat": "択一",
-      "title": "H26予備試験問4",
+      "title": "H26予備独自問題問4",
       "q": "登記に関する次のアからすまでの各記述のうち、判例の趣旨に照らし正しいものを組み合わせたものは、後記1から5までのうちどれか。",
       "choices2": [
         {
@@ -8085,13 +8085,13 @@
           "expl": "",
           "explanation": "",
           "importantChoice": false,
-          "updatedAt": "2026-06-21T03:41:22.556Z",
-          "dataUpdatedAt": "2026-06-21T03:41:22.556Z",
-          "choiceDataUpdatedAt": "2026-06-21T03:41:22.556Z",
-          "importantUpdatedAt": "2026-06-21T03:41:22.556Z",
-          "choiceImportantUpdatedAt": "2026-06-21T03:41:22.556Z",
-          "recordUpdatedAt": "2026-06-21T03:41:22.556Z",
-          "choiceRecordUpdatedAt": "2026-06-21T03:41:22.556Z"
+          "updatedAt": "2026-06-21T05:02:18.119Z",
+          "dataUpdatedAt": "2026-06-21T05:02:18.119Z",
+          "choiceDataUpdatedAt": "2026-06-21T05:02:18.119Z",
+          "importantUpdatedAt": "2026-06-21T05:02:18.119Z",
+          "choiceImportantUpdatedAt": "2026-06-21T05:02:18.119Z",
+          "recordUpdatedAt": "2026-06-21T05:02:18.119Z",
+          "choiceRecordUpdatedAt": "2026-06-21T05:02:18.119Z"
         },
         {
           "label": "イ",
@@ -8105,13 +8105,13 @@
           "expl": "",
           "explanation": "",
           "importantChoice": false,
-          "updatedAt": "2026-06-21T03:41:22.556Z",
-          "dataUpdatedAt": "2026-06-21T03:41:22.556Z",
-          "choiceDataUpdatedAt": "2026-06-21T03:41:22.556Z",
-          "importantUpdatedAt": "2026-06-21T03:41:22.556Z",
-          "choiceImportantUpdatedAt": "2026-06-21T03:41:22.556Z",
-          "recordUpdatedAt": "2026-06-21T03:41:22.556Z",
-          "choiceRecordUpdatedAt": "2026-06-21T03:41:22.556Z"
+          "updatedAt": "2026-06-21T05:02:18.119Z",
+          "dataUpdatedAt": "2026-06-21T05:02:18.119Z",
+          "choiceDataUpdatedAt": "2026-06-21T05:02:18.119Z",
+          "importantUpdatedAt": "2026-06-21T05:02:18.119Z",
+          "choiceImportantUpdatedAt": "2026-06-21T05:02:18.119Z",
+          "recordUpdatedAt": "2026-06-21T05:02:18.119Z",
+          "choiceRecordUpdatedAt": "2026-06-21T05:02:18.119Z"
         },
         {
           "label": "ウ",
@@ -8125,13 +8125,13 @@
           "expl": "",
           "explanation": "",
           "importantChoice": false,
-          "updatedAt": "2026-06-21T03:41:22.556Z",
-          "dataUpdatedAt": "2026-06-21T03:41:22.556Z",
-          "choiceDataUpdatedAt": "2026-06-21T03:41:22.556Z",
-          "importantUpdatedAt": "2026-06-21T03:41:22.556Z",
-          "choiceImportantUpdatedAt": "2026-06-21T03:41:22.556Z",
-          "recordUpdatedAt": "2026-06-21T03:41:22.556Z",
-          "choiceRecordUpdatedAt": "2026-06-21T03:41:22.556Z"
+          "updatedAt": "2026-06-21T05:02:18.119Z",
+          "dataUpdatedAt": "2026-06-21T05:02:18.119Z",
+          "choiceDataUpdatedAt": "2026-06-21T05:02:18.119Z",
+          "importantUpdatedAt": "2026-06-21T05:02:18.119Z",
+          "choiceImportantUpdatedAt": "2026-06-21T05:02:18.119Z",
+          "recordUpdatedAt": "2026-06-21T05:02:18.119Z",
+          "choiceRecordUpdatedAt": "2026-06-21T05:02:18.119Z"
         },
         {
           "label": "エ",
@@ -8145,13 +8145,13 @@
           "expl": "",
           "explanation": "",
           "importantChoice": false,
-          "updatedAt": "2026-06-21T03:41:22.556Z",
-          "dataUpdatedAt": "2026-06-21T03:41:22.556Z",
-          "choiceDataUpdatedAt": "2026-06-21T03:41:22.556Z",
-          "importantUpdatedAt": "2026-06-21T03:41:22.556Z",
-          "choiceImportantUpdatedAt": "2026-06-21T03:41:22.556Z",
-          "recordUpdatedAt": "2026-06-21T03:41:22.556Z",
-          "choiceRecordUpdatedAt": "2026-06-21T03:41:22.556Z"
+          "updatedAt": "2026-06-21T05:02:18.119Z",
+          "dataUpdatedAt": "2026-06-21T05:02:18.119Z",
+          "choiceDataUpdatedAt": "2026-06-21T05:02:18.119Z",
+          "importantUpdatedAt": "2026-06-21T05:02:18.119Z",
+          "choiceImportantUpdatedAt": "2026-06-21T05:02:18.119Z",
+          "recordUpdatedAt": "2026-06-21T05:02:18.119Z",
+          "choiceRecordUpdatedAt": "2026-06-21T05:02:18.119Z"
         },
         {
           "label": "オ",
@@ -8165,13 +8165,13 @@
           "expl": "",
           "explanation": "",
           "importantChoice": false,
-          "updatedAt": "2026-06-21T03:41:22.556Z",
-          "dataUpdatedAt": "2026-06-21T03:41:22.556Z",
-          "choiceDataUpdatedAt": "2026-06-21T03:41:22.556Z",
-          "importantUpdatedAt": "2026-06-21T03:41:22.556Z",
-          "choiceImportantUpdatedAt": "2026-06-21T03:41:22.556Z",
-          "recordUpdatedAt": "2026-06-21T03:41:22.556Z",
-          "choiceRecordUpdatedAt": "2026-06-21T03:41:22.556Z"
+          "updatedAt": "2026-06-21T05:02:18.119Z",
+          "dataUpdatedAt": "2026-06-21T05:02:18.119Z",
+          "choiceDataUpdatedAt": "2026-06-21T05:02:18.119Z",
+          "importantUpdatedAt": "2026-06-21T05:02:18.119Z",
+          "choiceImportantUpdatedAt": "2026-06-21T05:02:18.119Z",
+          "recordUpdatedAt": "2026-06-21T05:02:18.119Z",
+          "choiceRecordUpdatedAt": "2026-06-21T05:02:18.119Z"
         }
       ],
       "answerLabels": [
@@ -8185,24 +8185,24 @@
       "correctCount": 0,
       "wrongCount": 0,
       "lastAnswered": "",
-      "updatedAt": "2026-06-21T03:41:22.556Z",
-      "dataUpdatedAt": "2026-06-21T03:41:22.556Z",
-      "importantUpdatedAt": "2026-06-21T03:41:22.556Z",
-      "recordUpdatedAt": "2026-06-21T03:41:22.556Z"
+      "updatedAt": "2026-06-21T05:02:18.119Z",
+      "dataUpdatedAt": "2026-06-21T05:02:18.119Z",
+      "importantUpdatedAt": "2026-06-21T05:02:18.119Z",
+      "recordUpdatedAt": "2026-06-21T05:02:18.119Z"
     },
     {
       "id": "mqn8p4vxe77kta70ayr",
       "subjectBucket": "民法（総則・物権）",
+      "problemFormat": "択一",
       "year": "R2",
-      "exam": "予備試験",
+      "exam": "予備独自問題",
       "questionNo": "3",
       "subject": "民法",
       "unitLarge": "物権",
       "unitMiddle": "物権法総論",
       "unitSmall": "不動産物権変動",
       "important": false,
-      "problemFormat": "択一",
-      "title": "R2予備試験問3",
+      "title": "R2予備独自問題問3",
       "q": "登記に関する次のアからすまでの各記述のうち、判例の趣旨に照らし誤っているものを組み合わせたものは、後記1から5までのうちどれか。",
       "choices2": [
         {
@@ -8217,13 +8217,13 @@
           "expl": "",
           "explanation": "",
           "importantChoice": false,
-          "updatedAt": "2026-06-21T03:41:22.557Z",
-          "dataUpdatedAt": "2026-06-21T03:41:22.557Z",
-          "choiceDataUpdatedAt": "2026-06-21T03:41:22.557Z",
-          "importantUpdatedAt": "2026-06-21T03:41:22.557Z",
-          "choiceImportantUpdatedAt": "2026-06-21T03:41:22.557Z",
-          "recordUpdatedAt": "2026-06-21T03:41:22.557Z",
-          "choiceRecordUpdatedAt": "2026-06-21T03:41:22.557Z"
+          "updatedAt": "2026-06-21T05:02:35.342Z",
+          "dataUpdatedAt": "2026-06-21T05:02:35.342Z",
+          "choiceDataUpdatedAt": "2026-06-21T05:02:35.342Z",
+          "importantUpdatedAt": "2026-06-21T05:02:35.342Z",
+          "choiceImportantUpdatedAt": "2026-06-21T05:02:35.342Z",
+          "recordUpdatedAt": "2026-06-21T05:02:35.342Z",
+          "choiceRecordUpdatedAt": "2026-06-21T05:02:35.342Z"
         },
         {
           "label": "イ",
@@ -8237,13 +8237,13 @@
           "expl": "",
           "explanation": "",
           "importantChoice": false,
-          "updatedAt": "2026-06-21T03:41:22.557Z",
-          "dataUpdatedAt": "2026-06-21T03:41:22.557Z",
-          "choiceDataUpdatedAt": "2026-06-21T03:41:22.557Z",
-          "importantUpdatedAt": "2026-06-21T03:41:22.557Z",
-          "choiceImportantUpdatedAt": "2026-06-21T03:41:22.557Z",
-          "recordUpdatedAt": "2026-06-21T03:41:22.557Z",
-          "choiceRecordUpdatedAt": "2026-06-21T03:41:22.557Z"
+          "updatedAt": "2026-06-21T05:02:35.342Z",
+          "dataUpdatedAt": "2026-06-21T05:02:35.342Z",
+          "choiceDataUpdatedAt": "2026-06-21T05:02:35.342Z",
+          "importantUpdatedAt": "2026-06-21T05:02:35.342Z",
+          "choiceImportantUpdatedAt": "2026-06-21T05:02:35.342Z",
+          "recordUpdatedAt": "2026-06-21T05:02:35.342Z",
+          "choiceRecordUpdatedAt": "2026-06-21T05:02:35.342Z"
         },
         {
           "label": "ウ",
@@ -8257,13 +8257,13 @@
           "expl": "",
           "explanation": "",
           "importantChoice": false,
-          "updatedAt": "2026-06-21T03:41:22.557Z",
-          "dataUpdatedAt": "2026-06-21T03:41:22.557Z",
-          "choiceDataUpdatedAt": "2026-06-21T03:41:22.557Z",
-          "importantUpdatedAt": "2026-06-21T03:41:22.557Z",
-          "choiceImportantUpdatedAt": "2026-06-21T03:41:22.557Z",
-          "recordUpdatedAt": "2026-06-21T03:41:22.557Z",
-          "choiceRecordUpdatedAt": "2026-06-21T03:41:22.557Z"
+          "updatedAt": "2026-06-21T05:02:35.342Z",
+          "dataUpdatedAt": "2026-06-21T05:02:35.342Z",
+          "choiceDataUpdatedAt": "2026-06-21T05:02:35.342Z",
+          "importantUpdatedAt": "2026-06-21T05:02:35.342Z",
+          "choiceImportantUpdatedAt": "2026-06-21T05:02:35.342Z",
+          "recordUpdatedAt": "2026-06-21T05:02:35.342Z",
+          "choiceRecordUpdatedAt": "2026-06-21T05:02:35.342Z"
         },
         {
           "label": "エ",
@@ -8277,13 +8277,13 @@
           "expl": "",
           "explanation": "",
           "importantChoice": false,
-          "updatedAt": "2026-06-21T03:41:22.557Z",
-          "dataUpdatedAt": "2026-06-21T03:41:22.557Z",
-          "choiceDataUpdatedAt": "2026-06-21T03:41:22.557Z",
-          "importantUpdatedAt": "2026-06-21T03:41:22.557Z",
-          "choiceImportantUpdatedAt": "2026-06-21T03:41:22.557Z",
-          "recordUpdatedAt": "2026-06-21T03:41:22.557Z",
-          "choiceRecordUpdatedAt": "2026-06-21T03:41:22.557Z"
+          "updatedAt": "2026-06-21T05:02:35.342Z",
+          "dataUpdatedAt": "2026-06-21T05:02:35.342Z",
+          "choiceDataUpdatedAt": "2026-06-21T05:02:35.342Z",
+          "importantUpdatedAt": "2026-06-21T05:02:35.342Z",
+          "choiceImportantUpdatedAt": "2026-06-21T05:02:35.342Z",
+          "recordUpdatedAt": "2026-06-21T05:02:35.342Z",
+          "choiceRecordUpdatedAt": "2026-06-21T05:02:35.342Z"
         },
         {
           "label": "オ",
@@ -8297,13 +8297,13 @@
           "expl": "",
           "explanation": "",
           "importantChoice": false,
-          "updatedAt": "2026-06-21T03:41:22.557Z",
-          "dataUpdatedAt": "2026-06-21T03:41:22.557Z",
-          "choiceDataUpdatedAt": "2026-06-21T03:41:22.557Z",
-          "importantUpdatedAt": "2026-06-21T03:41:22.557Z",
-          "choiceImportantUpdatedAt": "2026-06-21T03:41:22.557Z",
-          "recordUpdatedAt": "2026-06-21T03:41:22.557Z",
-          "choiceRecordUpdatedAt": "2026-06-21T03:41:22.557Z"
+          "updatedAt": "2026-06-21T05:02:35.342Z",
+          "dataUpdatedAt": "2026-06-21T05:02:35.342Z",
+          "choiceDataUpdatedAt": "2026-06-21T05:02:35.342Z",
+          "importantUpdatedAt": "2026-06-21T05:02:35.342Z",
+          "choiceImportantUpdatedAt": "2026-06-21T05:02:35.342Z",
+          "recordUpdatedAt": "2026-06-21T05:02:35.342Z",
+          "choiceRecordUpdatedAt": "2026-06-21T05:02:35.342Z"
         }
       ],
       "answerLabels": [
@@ -8317,10 +8317,10 @@
       "correctCount": 0,
       "wrongCount": 0,
       "lastAnswered": "",
-      "updatedAt": "2026-06-21T03:41:22.557Z",
-      "dataUpdatedAt": "2026-06-21T03:41:22.557Z",
-      "importantUpdatedAt": "2026-06-21T03:41:22.557Z",
-      "recordUpdatedAt": "2026-06-21T03:41:22.557Z"
+      "updatedAt": "2026-06-21T05:02:35.342Z",
+      "dataUpdatedAt": "2026-06-21T05:02:35.342Z",
+      "importantUpdatedAt": "2026-06-21T05:02:35.342Z",
+      "recordUpdatedAt": "2026-06-21T05:02:35.342Z"
     },
     {
       "id": "mqn8p4vxgnsa8yt50qu",

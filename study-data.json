@@ -1,12 +1,12 @@
 {
   "app": "5taku-study",
   "type": "chunked-sync-meta",
-  "schemaVersion": 11,
-  "syncMode": "merge",
+  "schemaVersion": 12,
+  "syncMode": "overwrite",
   "chunked": true,
-  "exportedAt": "2026-06-21T01:28:04.272Z",
-  "count": 918,
-  "partCount": 13,
+  "exportedAt": "2026-06-21T03:44:02.775Z",
+  "count": 278,
+  "partCount": 4,
   "parts": [
     {
       "path": "study-data-part-000.json",
@@ -22,43 +22,7 @@
     },
     {
       "path": "study-data-part-003.json",
-      "count": 75
-    },
-    {
-      "path": "study-data-part-004.json",
-      "count": 75
-    },
-    {
-      "path": "study-data-part-005.json",
-      "count": 75
-    },
-    {
-      "path": "study-data-part-006.json",
-      "count": 75
-    },
-    {
-      "path": "study-data-part-007.json",
-      "count": 75
-    },
-    {
-      "path": "study-data-part-008.json",
-      "count": 75
-    },
-    {
-      "path": "study-data-part-009.json",
-      "count": 75
-    },
-    {
-      "path": "study-data-part-010.json",
-      "count": 75
-    },
-    {
-      "path": "study-data-part-011.json",
-      "count": 75
-    },
-    {
-      "path": "study-data-part-012.json",
-      "count": 18
+      "count": 53
     }
   ]
 }

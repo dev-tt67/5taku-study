@@ -2756,6 +2756,142 @@ window.restoreSyncData=restoreSyncData;
 window.downloadSyncData=restoreSyncData;
 // ==== 同期上書き・古い分割ファイル混入防止FIXここまで ====
 
+
+
+// ==== 同期完全上書き固定FIX ====
+function forceNow(){ return new Date().toISOString(); }
+function forceBasePath(cfg){ return String(cfg.path||"study-data.json").replace(/\.json$/,""); }
+function forcePartPath(cfg,index){ return `${forceBasePath(cfg)}-part-${String(index).padStart(3,"0")}.json`; }
+function forceNormalize(q){
+ if(typeof normalizeQuestionCanonical==="function") return normalizeQuestionCanonical(q);
+ if(typeof normalizeConflictSafe==="function") return normalizeConflictSafe(q);
+ if(typeof normalize==="function") return normalize(q);
+ return q;
+}
+function forceLocalQuestions(){ return (questions||[]).map(forceNormalize); }
+async function forceDeleteFile(cfg,path){
+ try{
+  const file = typeof githubApiGetFileByPath==="function" ? await githubApiGetFileByPath(cfg,path) : await githubApiGetFile({...cfg,path});
+  if(!file || !file.sha) return;
+  const url=`https://api.github.com/repos/${encodeURIComponent(cfg.owner)}/${encodeURIComponent(cfg.repo)}/contents/${encodeURIComponent(path).replace(/%2F/g,"/")}`;
+  await fetch(url,{
+   method:"DELETE",
+   headers:{
+    "Accept":"application/vnd.github+json",
+    "Authorization":`Bearer ${cfg.token}`,
+    "X-GitHub-Api-Version":"2022-11-28"
+   },
+   body:JSON.stringify({message:`Delete obsolete sync part ${path}`,sha:file.sha})
+  });
+ }catch(e){}
+}
+async function forceCleanupOldParts(cfg,keepCount){
+ for(let i=keepCount;i<100;i++){
+  await forceDeleteFile(cfg,forcePartPath(cfg,i));
+ }
+}
+async function uploadChunkedSyncPayload(cfg,payload){
+ const qs=((payload&&payload.questions)||forceLocalQuestions()).map(forceNormalize);
+ const chunkSize=75;
+ const chunks=[];
+ for(let i=0;i<qs.length;i+=chunkSize) chunks.push(qs.slice(i,i+chunkSize));
+ const parts=[];
+ for(let i=0;i<chunks.length;i++){
+  const path=forcePartPath(cfg,i);
+  const existing=typeof githubApiGetFileByPath==="function" ? await githubApiGetFileByPath(cfg,path) : await githubApiGetFile({...cfg,path});
+  const partPayload={
+   app:"5taku-study",
+   type:"questions-part",
+   schemaVersion:12,
+   syncMode:"overwrite",
+   exportedAt:forceNow(),
+   partIndex:i,
+   partCount:chunks.length,
+   count:chunks[i].length,
+   questions:chunks[i]
+  };
+  if(typeof githubApiPutFileByPath==="function") await githubApiPutFileByPath(cfg,path,partPayload,existing?existing.sha:null);
+  else await githubApiPutFile({...cfg,path},partPayload,existing?existing.sha:null);
+  parts.push({path,count:chunks[i].length});
+ }
+ await forceCleanupOldParts(cfg,chunks.length);
+ const metaExisting=await githubApiGetFile(cfg);
+ const meta={
+  app:"5taku-study",
+  type:"chunked-sync-meta",
+  schemaVersion:12,
+  syncMode:"overwrite",
+  chunked:true,
+  exportedAt:forceNow(),
+  count:qs.length,
+  partCount:chunks.length,
+  parts
+ };
+ await githubApiPutFile(cfg,meta,metaExisting?metaExisting.sha:null);
+ return meta;
+}
+async function loadChunkedOrSingleRemoteQuestions(cfg){
+ const metaRead=typeof readJsonByPath==="function" ? await readJsonByPath(cfg,cfg.path) : await githubApiReadJsonFile(cfg);
+ if(!metaRead.file) return {file:null,questions:[]};
+ const meta=metaRead.json||{};
+ if(meta.chunked && Array.isArray(meta.parts)){
+  let all=[];
+  for(const p of meta.parts){
+   const pr=typeof readJsonByPath==="function" ? await readJsonByPath(cfg,p.path) : await githubApiReadJsonFile({...cfg,path:p.path});
+   all=all.concat((pr.json&&pr.json.questions)||[]);
+  }
+  return {file:metaRead.file,questions:all.map(forceNormalize)};
+ }
+ return {file:metaRead.file,questions:(meta.questions||[]).map(forceNormalize)};
+}
+async function loadRemoteQuestions(cfg){ return await loadChunkedOrSingleRemoteQuestions(cfg); }
+
+async function uploadSyncData(){
+ const cfg=getSyncConfig();
+ if(!cfg.owner||!cfg.repo||!cfg.path||!cfg.token){ alert("同期設定を入力してください。"); return; }
+ try{
+  const local=forceLocalQuestions();
+  if(typeof setSyncStatus==="function") setSyncStatus(`完全上書きアップロード中：${local.length}問`);
+  await uploadChunkedSyncPayload(cfg,{app:"5taku-study",schemaVersion:12,syncMode:"overwrite",exportedAt:forceNow(),questions:local});
+  if(typeof safeAddSyncHistory==="function") safeAddSyncHistory("完全上書きアップロード後バックアップ",{questions:local});
+  if(typeof setSyncStatus==="function") setSyncStatus(`完全上書きアップロード完了：${local.length}問を保存しました。`);
+  alert(`完全上書きアップロード完了：${local.length}問を保存しました。`);
+ }catch(e){
+  console.error(e);
+  if(typeof setSyncStatus==="function") setSyncStatus(e.message||String(e));
+  alert(e.message||String(e));
+ }
+}
+async function restoreSyncData(){
+ const cfg=getSyncConfig();
+ if(!cfg.owner||!cfg.repo||!cfg.path||!cfg.token){ alert("同期設定を入力してください。"); return; }
+ try{
+  if(typeof setSyncStatus==="function") setSyncStatus("GitHubから取得中...");
+  const remote=await loadRemoteQuestions(cfg);
+  const qs=(remote.questions||[]).map(forceNormalize);
+  if(typeof replaceLocalQuestions==="function") await replaceLocalQuestions(qs);
+  else{
+   await clearStore();
+   for(const q of qs) await put(q);
+   await reload();
+  }
+  if(typeof setSyncStatus==="function") setSyncStatus(`復元完了：${qs.length}問を読み込みました。`);
+  alert(`復元完了：${qs.length}問を読み込みました。`);
+ }catch(e){
+  console.error(e);
+  if(typeof setSyncStatus==="function") setSyncStatus(e.message||String(e));
+  alert(e.message||String(e));
+ }
+}
+window.uploadSyncData=uploadSyncData;
+window.restoreSyncData=restoreSyncData;
+window.downloadSyncData=restoreSyncData;
+window.addEventListener("load",()=>{
+ const el=document.getElementById("syncMode")||document.getElementById("syncMethod");
+ if(el){ el.value="overwrite"; el.disabled=true; }
+});
+// ==== 同期完全上書き固定FIXここまで ====
+
 </script>
 </body>
 </html>

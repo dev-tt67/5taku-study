@@ -4,9 +4,9 @@
   "schemaVersion": 13,
   "syncMode": "overwrite",
   "chunked": true,
-  "exportedAt": "2026-06-21T12:22:45.299Z",
-  "count": 278,
-  "partCount": 4,
+  "exportedAt": "2026-06-21T16:13:14.901Z",
+  "count": 601,
+  "partCount": 9,
   "parts": [
     {
       "path": "study-data-part-000.json",
@@ -22,7 +22,27 @@
     },
     {
       "path": "study-data-part-003.json",
-      "count": 53
+      "count": 75
+    },
+    {
+      "path": "study-data-part-004.json",
+      "count": 75
+    },
+    {
+      "path": "study-data-part-005.json",
+      "count": 75
+    },
+    {
+      "path": "study-data-part-006.json",
+      "count": 75
+    },
+    {
+      "path": "study-data-part-007.json",
+      "count": 75
+    },
+    {
+      "path": "study-data-part-008.json",
+      "count": 1
     }
   ]
 }
